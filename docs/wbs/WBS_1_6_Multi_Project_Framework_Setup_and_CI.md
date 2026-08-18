@@ -1,7 +1,7 @@
 ---
 tags: [type/method, topic/project-management, layer/quality]
 status: permanent
-date: 2026-08-14
+date: 2026-08-18
 description: Technical architecture, multi-project configuration specification, and Definition of Done for WBS 1.6 - Framework Setup and CI Pipeline
 ---
 
@@ -11,8 +11,9 @@ description: Technical architecture, multi-project configuration specification, 
 
 - **WBS Code:** `1.6`
 - **Task Name:** Thiết Lập Khung Kiểm Thử Multi-Project, TypeScript & CI Pipeline
-- **Task Weight:** `4.0%`
-- **Deliverable Artifacts:** File `playwright.config.ts`, `package.json`, `.github/workflows/playwright.yml` trong repository `software-testing-playwright`.
+- **Assignee:** Trần Văn Ngọc (MSSV: 0306241131)
+- **Task Weight:** `2.0%`
+- **Deliverable Artifacts:** File `playwright.config.ts`, `package.json`, `.github/workflows/playwright.yml` trong repository `software-testing-playwright`, PR #1 pass base command.
 
 ## TL;DR
 
