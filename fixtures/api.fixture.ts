@@ -1,4 +1,5 @@
-import { test as base, APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
+import { test as base } from '@playwright/test';
 
 type ApiFixtures = {
   // Fixture cung cấp authenticated request context (có sẵn Bearer Token)
