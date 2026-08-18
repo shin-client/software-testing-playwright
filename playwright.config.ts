@@ -4,13 +4,13 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const API_BASE_URL = process.env.API_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.API_BASE_URL || process.env.BASE_URL || 'https://ticket-booking-amqv.onrender.com';
 const WEB_BASE_URL = process.env.WEB_BASE_URL || 'https://www.saucedemo.com';
 
 /**
  * Playwright Multi-Project Configuration for Group 67 SDET Automation Framework
  * Supporting dual-engine testing:
- *  - NestJS Ticket Booking API Backend (localhost:3000)
+ *  - NestJS Ticket Booking API Backend (https://ticket-booking-amqv.onrender.com)
  *  - SauceDemo Swag Labs Web UI (https://www.saucedemo.com)
  */
 export default defineConfig({

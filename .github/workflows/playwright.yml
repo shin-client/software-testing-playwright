@@ -2,9 +2,9 @@ name: Playwright Automation CI
 
 on:
   push:
-    branches: [main, master, 'feat/**', 'fix/**']
+    branches: [main, 'feat/**', 'fix/**']
   pull_request:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -12,6 +12,13 @@ jobs:
     name: Run Playwright Dual-Engine Test Suite (Bun)
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      CI: true
+      NODE_ENV: production
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      WEB_BASE_URL: ${{ secrets.WEB_BASE_URL || 'https://www.saucedemo.com' }}
 
     steps:
       - name: Checkout Source Code
@@ -36,15 +43,9 @@ jobs:
 
       - name: Run Playwright API Tests (NestJS Backend)
         run: bun run test:api
-        env:
-          CI: true
-          API_BASE_URL: ${{ secrets.API_BASE_URL || 'http://localhost:3000' }}
 
       - name: Run Playwright Web UI Tests (SauceDemo Chromium)
         run: bun run test:e2e
-        env:
-          CI: true
-          WEB_BASE_URL: https://www.saucedemo.com
 
       - name: Upload Playwright HTML Report
         uses: actions/upload-artifact@v4
