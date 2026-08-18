@@ -46,7 +46,7 @@ Dữ liệu đồng bộ trực tiếp từ file Google Sheets quản lý dự �
 |   1.4B   | Phân tích Năng lực API (`APIRequestContext`, Hybrid Auth, SOM)                | Soạn Mục 2.4 Chương 2 Báo cáo Word & Bản thảo Slide                    |       2.5%        | Nguyễn Hoài Linh  |                      |    To Do    |                      |           0.00%           |          |
 |   1.5A   | So sánh đối sánh Playwright vs TestComplete (Kiến trúc & Chi phí TCO)         | Soạn Mục 4.1A Chương 4 Báo cáo Word & Bản thảo Slide                   |       2.0%        | Ngô Gia Bảo       |                      |    To Do    |                      |           0.00%           |          |
 |   1.5B   | So sánh đối sánh Playwright vs Selenium 4 & Cypress (HTTP vs CDP, Multi-tab)  | Soạn Mục 4.1B Chương 4 Báo cáo Word & Bản thảo Slide                   |       2.0%        | Nguyễn Quốc Đương |                      |    To Do    |                      |           0.00%           |          |
-|   1.6    | Thiết lập Khung kiểm thử Multi-Project & GitHub Actions CI Pipeline           | Cấu hình `playwright.config.ts`, chạy pass base command & Slide        |       2.0%        | Trần Văn Ngọc     |                      | In Progress |                      |           0.00%           |          |
+|   1.6    | Thiết lập Khung kiểm thử Multi-Project & GitHub Actions CI Pipeline           | Cấu hình `playwright.config.ts`, chạy pass base command & Slide        |       2.0%        | Trần Văn Ngọc     | Commit `9322038`, pass CI workflow   | In Progress |        90.0%         |           1.80%           |          |
 |  **2**   | **API AUTOMATION SUITE**                                                      |                                                                        |      **30%**      |                   |                      |             |                      |                           |          |
 |   2.1    | API Ca 1: Auth Lifecycle, JWT & Single-use Token Rotation                     | Code `auth.spec.ts` & SOM `AuthService`, pass test & Bản thảo Slide    |       7.5%        | Nguyễn Quốc Đương |                      |    To Do    |                      |           0.00%           |          |
 |   2.2    | API Ca 2: High-Contention Concurrency & Redis Redlock Race Condition Test     | Code `concurrency.spec.ts` (`Promise.all`), pass test & Bản thảo Slide |       7.5%        | Trần Văn Ngọc     |                      |    To Do    |                      |           0.00%           |          |
@@ -72,14 +72,14 @@ Dữ liệu đồng bộ trực tiếp từ Tab `THÔNG TIN THÀNH VIÊN` trên 
 
 |   STT    | Họ và Tên                    | MSSV       | Các Hạng Mục Phụ Trách                  | Tổng Trọng Số (%) | Đóng Góp Thực Tế (%) |
 | :------: | ---------------------------- | ---------- | --------------------------------------- | :---------------: | :------------------: |
-|    1     | **Trần Văn Ngọc** *(Leader)* | 0306241131 | WBS 1.1B, 1.6, 2.2, 4.2B                |     **14.5%**     |        0.00%         |
+|    1     | **Trần Văn Ngọc** *(Leader)* | 0306241131 | WBS 1.1B, 1.6, 2.2, 4.2B                |     **14.5%**     |        1.80%         |
 |    2     | **Ngô Gia Bảo**              | 0306241090 | WBS 1.3A, 1.5A, 3.2, 4.3A               |     **14.0%**     |        0.00%         |
 |    3     | **Nguyễn Quốc Đương**        | 0306241102 | WBS 1.2B, 1.5B, 2.1, 4.2A               |     **15.0%**     |        0.00%         |
 |    4     | **Đặng Duy Lam**             | 0306241125 | WBS 1.2A, 2.3, 4.1A                     |     **13.5%**     |        0.00%         |
 |    5     | **Nguyễn Hoài Linh**         | 0306241126 | WBS 1.4B, 2.4, 4.1B                     |     **13.5%**     |        0.00%         |
 |    6     | **Lê Minh Quân**             | 0306241143 | WBS 1.1A, 1.4A, 3.1, 4.3B               |     **15.0%**     |        0.00%         |
 |    7     | **Lê Minh Tài**              | 0306241145 | WBS 1.3B, 3.3, 3.4                      |     **14.5%**     |        0.00%         |
-| **TỔNG** | **Cả Nhóm**                  |            | **25 Gói công việc (100% Đơn chủ trì)** |    **100.0%**     |      **0.00%**       |
+| **TỔNG** | **Cả Nhóm**                  |            | **25 Gói công việc (100% Đơn chủ trì)** |    **100.0%**     |      **1.80%**       |
 ## 4. Hướng Dẫn Thiết Lập Công Thức Trên Google Sheets
 
 ### A. Công thức tính Điểm Đóng Góp Từng Task (Cột I bên Master WBS)

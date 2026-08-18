@@ -7,10 +7,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": ["tests/**/*", "fixtures/**/*", "utils/**/*", "playwright.config.ts"]
+  "include": ["tests/**/*", "fixtures/**/*", "utils/**/*", "playwright.config.ts", "eslint.config.js"]
 }

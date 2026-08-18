@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    name: Run Playwright Test Suite
+    name: Run Playwright Test Suite & Quality Checks
     timeout-minutes: 30
     runs-on: ubuntu-latest
 
@@ -25,6 +25,12 @@ jobs:
 
       - name: Install Project Dependencies
         run: npm ci || npm install
+
+      - name: Run TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Run ESLint Code Analysis
+        run: npm run lint
 
       - name: Install Playwright Browsers & OS Dependencies
         run: npx playwright install --with-deps chromium

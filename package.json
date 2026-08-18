@@ -14,6 +14,9 @@
     "test:headed": "playwright test --project=chromium --headed",
     "test:debug": "playwright test --debug",
     "test:ci": "playwright test --reporter=list,html,json,junit",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --fix --cache",
+    "check": "tsc --noEmit && eslint . --cache",
     "report": "playwright show-report",
     "codegen": "playwright codegen https://www.saucedemo.com"
   },
@@ -27,9 +30,14 @@
   "author": "Group 67 (Cao Thang)",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.50.0",
-    "@types/node": "^22.13.0",
-    "dotenv": "^16.4.7",
-    "typescript": "^5.7.3"
+    "@types/node": "^26.2.0",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.8.1",
+    "eslint-plugin-playwright": "^2.11.0",
+    "jiti": "^2.7.0",
+    "typescript": "6.0.0-beta",
+    "typescript-eslint": "^8.67.0"
   }
 }
