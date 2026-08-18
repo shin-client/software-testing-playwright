@@ -15,7 +15,6 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-jammy
       options: --ipc=host
-    environment: production
 
     env:
       CI: true
