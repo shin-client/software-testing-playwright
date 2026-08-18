@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    name: Run Playwright Test Suite & Quality Checks
+    name: Run Playwright Test Suite & Quality Checks (Bun)
     timeout-minutes: 30
     runs-on: ubuntu-latest
 
@@ -17,26 +17,25 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Environment
-        uses: actions/setup-node@v4
+      - name: Setup Bun Runtime Environment
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          cache: 'npm'
+          bun-version: latest
 
       - name: Install Project Dependencies
-        run: npm ci || npm install
+        run: bun install --frozen-lockfile || bun install
 
       - name: Run TypeScript Typecheck
-        run: npm run typecheck
+        run: bun run typecheck
 
       - name: Run ESLint Code Analysis
-        run: npm run lint
+        run: bun run lint
 
       - name: Install Playwright Browsers & OS Dependencies
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: Run Playwright E2E Tests (Chromium)
-        run: npx playwright test --project=chromium
+        run: bun run test:e2e
         env:
           CI: true
           WEB_BASE_URL: https://www.saucedemo.com
