@@ -1,4 +1,5 @@
 # Đồ Án Môn Học: Kiểm Thử Phần Mềm (Software Testing)
+
 ## Đề Tài: Tự Động Hóa Kiểm Thử (Automation Testing) Với Playwright
 
 > **Trường:** Cao Đẳng Kỹ Thuật Cao Thắng  
@@ -7,7 +8,7 @@
 > **Giảng viên hướng dẫn:** Thầy Nguyễn Hoàng Việt  
 > **Công nghệ nghiên cứu chính:** Playwright Test Framework (Microsoft)  
 > **Kiến trúc thực thi:** Dual-Engine (API Automation Testing + Web UI Automation Testing)  
-> **Đối chiếu & So sánh:** Selenium WebDriver, Cypress, TestComplete (SmartBear)  
+> **Đối chiếu & So sánh:** Selenium WebDriver, Cypress, TestComplete (SmartBear)
 
 ---
 
@@ -86,6 +87,7 @@ software-testing-playwright/
 ## 3. Hướng Dẫn Cài Đặt & Chạy Kiểm Thử (Getting Started)
 
 ### Bước 1: Cài đặt dependencies và Trình duyệt
+
 ```bash
 # 1. Cài đặt các gói phụ thuộc (ưu tiên dùng bun hoặc npm)
 bun install
@@ -97,17 +99,12 @@ bunx playwright install --with-deps
 ```
 
 ### Bước 2: Thiết lập biến môi trường
+
 ```bash
 cp .env.example .env
 ```
 
-### Bước 3: Khởi động Backend mục tiêu (Phục vụ API Test Suite)
-Đảm bảo Backend `ticket-booking` cùng PostgreSQL và Redis đang hoạt động tại máy local:
-```bash
-# URL mặc định: http://localhost:3000
-```
-
-### Bước 4: Thực thi kiểm thử (Test Execution Commands)
+### Bước 3: Thực thi kiểm thử (Test Execution Commands)
 
 ```bash
 # 1. Chạy toàn bộ kịch bản kiểm thử API
@@ -139,6 +136,7 @@ bunx playwright show-trace playwright-report/trace.zip
 ## 4. Danh Mục Ca Kiểm Thử Thực Chiến (High-Leverage Test Cases)
 
 ### A. Tầng API Testing (`tests/api/` - Target: `ticket-booking`)
+
 1. **WBS 2.1 - Auth Lifecycle & Single-use Token Rotation:**
    `Register` $\to$ `Login` $\to$ Trích xuất JWT & SHA-256 Refresh Token $\to$ `Get Profile` $\to$ `Refresh Token` $\to$ Kiểm tra Replay Attack (Assert 401 khi dùng lại token cũ) $\to$ `Logout All`.
 2. **WBS 2.2 - High-Contention Concurrency & Redis Redlock:**
@@ -149,6 +147,7 @@ bunx playwright show-trace playwright-report/trace.zip
    Dùng Zod Schema kiểm định cấu trúc lỗi chuẩn `application/problem+json` $\to$ Bắn liên tiếp 15 requests vào `/auth/login` để kích hoạt `CustomThrottlerGuard` $\to$ Assert $429$ Too Many Requests kèm header `Retry-After`.
 
 ### B. Tầng Web UI Testing (`tests/e2e/` - Target: SauceDemo)
+
 1. **WBS 3.1 - Full E2E Checkout Flow với Page Object Model:**
    Đăng nhập `standard_user` $\to$ Lọc theo giá `Price (low to high)` $\to$ Thêm 2 món hàng $\to$ Assert giỏ hàng $\to$ Điền form thanh toán $\to$ Assert tính đúng thuế $8\%$ và tổng tiền `Total = Item total + Tax` $\to$ Hoàn tất đơn hàng.
 2. **WBS 3.2 - Network Interception `page.route()` & Error Resilience:**
@@ -165,6 +164,7 @@ bunx playwright show-trace playwright-report/trace.zip
 Toàn bộ tiến độ phân rã 16 gói công việc (WBS), phân công nhiệm vụ 7 thành viên, ma trận RACI và bảng tính điểm đóng góp thực tế được quản lý trực tiếp tại:  
 👉 **Google Sheets Master WBS (Live):** [Bảng Phân Công & Theo Dõi Tiến Độ Đồ Án Playwright](https://docs.google.com/spreadsheets/d/1jc5ae9wDK6p7h40i_gdDkzsnAYVMor-UWrUUTGSdZRo/edit?usp=sharing)  
 👉 **Tài liệu hướng dẫn & Snapshot ngoại tuyến:** [`docs/wbs/Team_Work_Breakdown_and_Contribution_Matrix_Template.md`](./docs/wbs/Team_Work_Breakdown_and_Contribution_Matrix_Template.md)
+
 - **Luật cấm Push trực tiếp `main`:** Mọi thành viên phải tạo nhánh theo cú pháp: `feat/wbs-<mã_wbs>-<tên_task>`.
 - **Quy tắc Pull Request (PR):** Mỗi task gắn với 1 PR, đính kèm kết quả chạy test và cần Approval từ Trưởng nhóm.
 - **Quy định Deadline & Chế tài:**
