@@ -1,26 +1,30 @@
 {
   "name": "software-testing-playwright",
   "version": "1.0.0",
-  "description": "Automation Testing Project with Playwright for Software Testing Course (Cao Thang)",
+  "description": "Automation Testing Framework with Playwright (Group 67 - Cao Thang Technical College)",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:api": "playwright test tests/api",
-    "test:e2e": "playwright test tests/e2e",
+    "test:api": "playwright test --project=api",
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:all": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:smoke": "playwright test --project=smoke",
     "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
+    "test:headed": "playwright test --project=chromium --headed",
     "test:debug": "playwright test --debug",
+    "test:ci": "playwright test --reporter=list,html,json,junit",
     "report": "playwright show-report",
-    "codegen": "playwright codegen"
+    "codegen": "playwright codegen https://www.saucedemo.com"
   },
   "keywords": [
     "playwright",
     "automation-testing",
     "api-testing",
-    "e2e-testing"
+    "e2e-testing",
+    "sdet"
   ],
-  "author": "",
+  "author": "Group 67 (Cao Thang)",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.50.0",
