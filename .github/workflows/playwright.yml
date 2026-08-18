@@ -9,14 +9,17 @@ on:
 
 jobs:
   test:
-    name: Run Playwright Dual-Engine Test Suite (Bun)
+    name: Run Playwright Dual-Engine Test Suite
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-jammy
+      options: --ipc=host
     environment: production
 
     env:
       CI: true
-      NODE_ENV: production
+      HEADLESS: true
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
       WEB_BASE_URL: ${{ secrets.WEB_BASE_URL || 'https://www.saucedemo.com' }}
 
@@ -25,9 +28,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Bun Runtime Environment
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+        run: npm install -g bun
+        # uses: oven-sh/setup-bun@v2
+        # with:
+        #   bun-version: latest
 
       - name: Install Project Dependencies
         run: bun install --frozen-lockfile || bun install
@@ -38,13 +42,10 @@ jobs:
       - name: Run ESLint Code Analysis
         run: bun run lint
 
-      - name: Install Playwright Browsers & OS Dependencies
-        run: bunx playwright install --with-deps chromium
-
-      - name: Run Playwright API Tests (NestJS Backend)
+      - name: Run Playwright API Tests
         run: bun run test:api
 
-      - name: Run Playwright Web UI Tests (SauceDemo Chromium)
+      - name: Run Playwright Web UI Tests
         run: bun run test:e2e
 
       - name: Upload Playwright HTML Report
