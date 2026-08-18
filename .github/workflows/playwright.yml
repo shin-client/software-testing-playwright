@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout Source Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup Bun Runtime Environment
         uses: oven-sh/setup-bun@v2
@@ -41,7 +41,7 @@ jobs:
           WEB_BASE_URL: https://www.saucedemo.com
 
       - name: Upload Playwright HTML Report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -49,7 +49,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Test Results & Traces
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: test-results
