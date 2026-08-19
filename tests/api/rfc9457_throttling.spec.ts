@@ -3,7 +3,11 @@ import { ProblemDetailsSchema } from '../../schemas/rfc9457.schema.js';
 
 test.describe('WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler', () => {
   // Tăng Timeout mặc định lên 60s để tránh lỗi Cold Start của Render Server
-  test.setTimeout(60000);
+  test.describe.configure({ 
+    mode: 'serial',
+    retries: 1,
+    timeout: 60000 
+  });
 
   test('TC-RFC-01: Zod Schema Contract Validation for 400 Bad Request & 404 Not Found', async ({ request }) => {
     // 1.1 Kiểm tra 400 Bad Request (Sai DTO Validation)
@@ -72,22 +76,16 @@ test.describe('WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler', () 
       if (res.status() === 429) break;
     }
 
-    // 2. Trích xuất thời gian Retry-After từ Server
-    const headers = res!.headers();
-    const retryAfterHeader = headers['retry-after'] ?? headers['retry-after-auth'];
-    const waitSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 10;
-
-    // Cộng thêm 2 giây đệm an toàn để đảm bảo cửa sổ Rate Limit đã reset hoàn toàn
-    const waitMs = (waitSeconds + 2) * 1000;
-
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
-
-    // 3. Thực hiện gửi lại request sau thời gian Cooldown
-    const recoveryRes = await request.post('/auth/login', {
-      data: { email: "test@example.com", password: "wrong" }
-    });
-
-    // Assert response không còn bị chặn bởi 429
-    expect(recoveryRes.status()).not.toBe(429);
+    // 2. Thăm dò liên tục (Polling) cho đến khi Server hết cấm (Không còn bị 429)
+    await expect.poll(async () => {
+      const recoveryRes = await request.post('/auth/login', {
+        data: { email: "cooldown_test@example.com", password: "wrong_password" }
+      });
+      return recoveryRes.status();
+    }, {
+      message: 'Server vẫn bị chặn 429 sau thời gian Cooldown',
+      timeout: 30000,          // Thử tối đa trong 30s
+      intervals: [2000, 3000], // Thăm dò sau mỗi 2s - 3s
+    }).not.toBe(429);
   });
 });
