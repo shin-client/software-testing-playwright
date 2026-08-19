@@ -1,84 +1,75 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Step-by-step setup tutorial, TypeScript configuration, CLI execution flags, Codegen recording guide, and Definition of Done for WBS 1.3A
----
-
 # WBS 1.3A: Environment Setup, CLI Commands, and Playwright Codegen
 
 ## Metadata
 
 - **WBS Code:** `1.3A`
-- **Task Name:** Quy trình cài đặt môi trường, TypeScript, Playwright CLI & Codegen
+- **Task Name:** Nghiên cứu Cài đặt môi trường Bun/TypeScript, CLI Commands & Playwright Codegen
 - **Assignee:** Ngô Gia Bảo (MSSV: 0306241090)
 - **Task Weight:** `2.5%`
-- **Deliverable Artifacts:** Mục 2.1 & 2.2A Chương 2 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** Mục 2.1 & 2.2A Chương 2 trong `67_Bao_cao.docx`.
 
 ## TL;DR
 
-Tài liệu hướng dẫn chi tiết quy trình thiết lập môi trường phát triển kiểm thử tự động với Node.js/Bun, khởi tạo dự án TypeScript với Playwright Test Engine, tổng hợp bảng tra cứu các cờ lệnh dòng lệnh (CLI Commands) cốt lõi và hướng dẫn vận hành công cụ sinh mã nguồn tự động thông minh (Playwright Codegen).
-
-## Core Architectural Content to Document
-
-### 1. Quy Trình Cài Đặt & Khởi Tạo Dự Án Mới
-
-```bash
-# Buoc 1: Khoi tao du an Playwright voi TypeScript
-npm init playwright@latest
-
-# Tuan thu cac thiet lap mac dinh:
-# - Ngon ngu: TypeScript
-# - Thu muc test: src/ (hoac tests/)
-# - Cai dat trinh duyet Playwright Browsers: Yes
-# - Cai dat GitHub Actions Workflow: Yes
-
-# Buoc 2: Cai dat bo trinh duyet Chromium va cac thu vien he dieu hanh phu thuoc
-npx playwright install --with-deps chromium
-
-# Buoc 3: Cai dat cac goi ho tro nghiep vu
-npm install dotenv zod @faker-js/faker --save-dev
-```
-
-### 2. Bảng Tra Cứu Cờ Lệnh Dòng Lệnh Cốt Lõi (Playwright CLI Commands)
-
-| Lệnh CLI Thực Thi | Ý Nghĩa Kỹ Thuật & Tình Huống Sử Dụng |
-|---|---|
-| `npx playwright test` | Thực thi toàn bộ test suite ở chế độ không đầu (Headless mode). |
-| `npx playwright test --headed` | Bật giao diện đồ họa trình duyệt để quan sát trực tiếp luồng thao tác. |
-| `npx playwright test --project=api-tests` | Chỉ thực thi các bài test thuộc cấu hình dự án API (không mở browser). |
-| `npx playwright test --project=chromium` | Chỉ thực thi các bài test thuộc cấu hình Web UI trên Chromium. |
-| `npx playwright test -g "@smoke"` | Lọc và chỉ chạy các bài test có chứa tag `@smoke` trong tiêu đề. |
-| `npx playwright test --workers=4` | Giới hạn số lượng luồng thực thi song song (Worker Threads) là 4. |
-| `npx playwright test --retries=2` | Tự động chạy lại tối đa 2 lần đối với các bài test bị thất bại. |
-| `npx playwright show-report` | Khởi động máy chủ Web nội bộ để xem báo cáo kết quả kiểm thử HTML. |
-
-### 3. Hướng Dẫn Sử Dụng Playwright Codegen (Record & Playback)
-
-- **Lệnh kích hoạt:**
-  ```bash
-  npx playwright codegen https://www.saucedemo.com
-  ```
-- **Cơ chế hoạt động:**
-  1. Trình duyệt tự động mở trang web đích kèm theo cửa sổ tiện ích **Playwright Inspector**.
-  2. Mọi thao tác tương tác của người dùng (Click, Gõ phím, Chọn dropdown) được phân tích qua cây Accessibility Tree và tự động chuyển đổi thành các bộ định vị chuẩn (`getByRole`, `getByPlaceholder`, `getByTestId`).
-  3. Lập trình viên có thể chuyển đổi ngôn ngữ sinh mã trực tiếp (TypeScript, JavaScript, Python, C#, Java).
-  4. Hỗ trợ giả lập thiết bị di động (Mobile Emulation) qua cờ `--device="iPhone 14"`.
-  5. Hỗ trợ lưu phiên đăng nhập tự động qua cờ `--save-storage=auth.json`.
+- **Bản chất:** Đặc tả nhiệm vụ nghiên cứu quy trình thiết lập môi trường phát triển kiểm thử tự động với Bun Runtime, bảng tra cứu Playwright CLI và công cụ sinh mã tự động Codegen.
+- **Mục đích:** Cung cấp câu hỏi định hướng và tài liệu chính thống để người phụ trách xây dựng hướng dẫn cài đặt chuẩn xác cho nhóm và viết phần Báo cáo Chương 2.
+- **Điểm mấu chốt:** Nắm vững các cờ lệnh dòng lệnh then chốt và cơ chế sinh Role-based Locators tự động từ cây Accessibility Tree của Codegen.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Phạm Vi Nghiên Cứu (Research Scope)
 
-- [ ] **Báo cáo Word (`67_Bao_cao.docx`):**
-  - [ ] Soạn thảo đầy đủ Mục 2.1 & 2.2A Chương 2: Hướng dẫn cài đặt môi trường, bảng tổng hợp cờ lệnh CLI và hướng dẫn sử dụng Codegen.
-  - [ ] Đính kèm tối thiểu 2 ảnh chụp màn hình minh họa thực tế: Cửa sổ terminal cài đặt thành công và giao diện Codegen đang ghi nhận thao tác.
-  - [ ] Định dạng khối code rõ ràng, tô màu cú pháp.
-- [ ] **Review & Bàn Giao:**
-  - [ ] Nộp bản thảo Word và Slide cho Trưởng nhóm nghiệm thu đúng hạn.
+- **Phạm vi trọng tâm:**
+  - Quy trình khởi tạo dự án kiểm thử chuẩn với Bun Runtime, TypeScript, và `@playwright/test`.
+  - Cài đặt trình duyệt headless (`chromium`, `firefox`, `webkit`) và các thư viện hệ điều hành phụ thuộc Linux (`--with-deps`).
+  - Hệ thống các cờ lệnh thực thi Playwright CLI: Chế độ Headed/Headless, giới hạn luồng Workers song song, cơ chế Retries khi lỗi, lọc theo Projects (`api`, `chromium`, `smoke`) hoặc Tags (`-g "@smoke"`).
+  - Năng lực của công cụ sinh mã thông minh Playwright Codegen: Tự động ghi lại hành vi người dùng, dịch sang Role-based Locators chuẩn, giả lập thiết bị di động (Mobile Emulation), và tự động lưu phiên xác thực (`--save-storage`).
+- **Ranh giới ngoài phạm vi (Non-goals):** Không đi sâu vào cấu hình CI Pipeline phức tạp (đã phân bổ tại WBS 1.6).
 
-## Related Notes
+---
 
-- [[WBS_1_6_Multi_Project_Framework_Setup_and_CI]]
-- [[Role_Based_Locators_and_Accessibility_Tree]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+## 2. Các Câu Hỏi Cốt Lõi Cần Trả Lời (Core Guiding Questions)
+
+Người phụ trách cần nghiên cứu tài liệu chính thống để trả lời các câu hỏi sau:
+
+1. **Về Môi Trường & Runtime:**
+   - Tại sao dự án đồ án lựa chọn Bun Runtime thay vì Node.js/npm truyền thống (tốc độ cài đặt package, hỗ trợ native TypeScript không cần cấu hình phức tạp)?
+   - Lệnh `bunx playwright install --with-deps chromium` thực hiện những nhiệm vụ gì trên hệ điều hành Linux/Ubuntu?
+2. **Về Bảng Tra Cứu Playwright CLI:**
+   - Liệt kê và giải thích ý nghĩa của tối thiểu 8 cờ lệnh CLI quan trọng nhất: Chạy toàn bộ test, chạy có giao diện (`--headed`), chỉ định project (`--project=api`), lọc theo tên test (`-g`), điều chỉnh số lượng luồng (`--workers`), cấu hình chạy lại khi fail (`--retries`), và mở báo cáo kết quả (`show-report`).
+3. **Về Công Cụ Sinh Mã Thông Minh (Playwright Codegen):**
+   - Làm thế nào Codegen phân tích cây Accessibility Tree của trình duyệt để tự động sinh ra các locator bền vững (`getByRole`, `getByPlaceholder`, `getByTestId`) thay vì sinh ra XPath tuyệt đối dễ gãy?
+   - Cờ lệnh nào cho phép Codegen giả lập thiết bị di động (như iPhone 14, Pixel 7)?
+   - Làm thế nào để sử dụng Codegen ghi nhận luồng đăng nhập và xuất ra file trạng thái phiên `auth.json` (`--save-storage`)?
+
+---
+
+## 3. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+Người phụ trách bắt buộc phải đọc và trích dẫn từ các nguồn chuẩn sau:
+
+1. **Tài Liệu Chính Thống Playwright:**
+   - [Playwright Getting Started & Installation Guide](https://playwright.dev/docs/intro)
+   - [Playwright Command Line Tools (CLI Reference)](https://playwright.dev/docs/test-cli)
+   - [Playwright Codegen (Auto-generating Tests)](https://playwright.dev/docs/codegen)
+   - [Playwright Emulation & Mobile Devices](https://playwright.dev/docs/emulation)
+2. **Tài Liệu Runtime & Package Manager:**
+   - [Bun Official Documentation & Package Management](https://bun.sh/docs)
+
+---
+
+## 4. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo Word (`67_Bao_cao.docx` - Mục 2.1 & 2.2A Chương 2)
+- **2.1. Quy trình cài đặt môi trường Bun & TypeScript:** Hướng dẫn từng bước lệnh cài đặt Bun, tải browser binaries và dependencies. Đính kèm 01 ảnh chụp màn hình terminal cài đặt thành công.
+- **2.2A. Bảng tổng hợp Playwright CLI & Hướng dẫn Codegen:**
+  - Bảng tra cứu các cờ lệnh CLI cốt lõi.
+  - Hướng dẫn thực hành sử dụng Codegen kèm 01 ảnh chụp màn hình giao diện Playwright Inspector đang bắt locator.
+
+---
+
+## 5. Tiêu Chí Đánh Giá & Nghiệm Thu (Evaluation Rubric & DoD)
+
+- [ ] **Khả Năng Phản Biện:** Thao tác trực tiếp được các lệnh CLI và trình diễn Codegen khi được yêu cầu demo.
+- [ ] **Chất Lượng Học Thuật:**
+  - [ ] Toàn bộ lệnh trong báo cáo chuẩn hóa $100\%$ theo cú pháp Bun (`bun`, `bunx`), không bị lẫn lệnh npm/npx cũ.
+  - [ ] Ảnh chụp màn hình thực tế, có chú thích hình ảnh rõ ràng.

@@ -1,98 +1,125 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Technical test specification, Pixel-by-Pixel visual regression testing, dynamic element masking, and Definition of Done for WBS 3.4
----
-
-# WBS 3.4: Web UI Test Suite - Visual Regression Testing and Dynamic Data Masking
+# WBS 3.4: Web UI Test Suite - Visual Regression and Data Masking
 
 ## Metadata
 
 - **WBS Code:** `3.4`
-- **Task Name:** UI Ca 4: Visual Regression Testing & Dynamic Data Masking
+- **Task Name:** Web UI Ca 4: Kiểm Thử Hồi Quy Trực Quan Visual Regression & Data Masking
 - **Assignee:** Lê Minh Tài (MSSV: 0306241145)
 - **Task Weight:** `6.0%`
-- **Deliverable Artifacts:** File mã nguồn `src/ui/specs/visual_regression.spec.ts`, các file ảnh Golden Snapshots, Pull Request GitHub, Mục 3.8 Chương 3 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** File mã nguồn `tests/e2e/visual_regression.spec.ts`, thư mục ảnh mẫu `tests/e2e/__snapshots__/`, Pull Request GitHub, Mục 3.3.4 Chương 3 trong `67_Bao_cao.docx` / `67_Bao_cao.tex`.
 
 ## TL;DR
 
-Tài liệu đặc tả kỹ thuật kịch bản kiểm thử tự động Web UI Ca 4: Kiểm thử hồi quy trực quan (Visual Regression Testing) thông qua kỹ thuật so khớp điểm ảnh (Pixel-by-Pixel Comparison) với hàm `toHaveScreenshot()`. Triển khai kỹ thuật che dữ liệu động (Dynamic Data Masking) để loại bỏ hoàn toàn các cảnh báo sai lệch giả (False Positives) do thời gian thực hoặc dữ liệu ngẫu nhiên tạo ra.
-
-## Core Architectural Content to Implement
-
-### 1. Bản Chất Kỹ Thuật Của Visual Regression Testing
-
-- **Functional Testing vs Visual Testing:**
-  - *Functional Testing:* Chỉ kiểm tra phần tử có tồn tại trong DOM và có chứa chuỗi text hay không. Không thể phát hiện lỗi vỡ layout, tràn văn bản (Text Overflow), lệch vị trí CSS hoặc xung đột màu sắc.
-  - *Visual Regression Testing:* Chụp ảnh màn hình thực tế và so sánh với ảnh chuẩn mẫu (Golden Reference Snapshot). Tự động tô đỏ các pixel bị sai lệch để cảnh báo lập trình viên.
-- **Thuật toán so sánh ảnh:** Sử dụng thuật toán Pixelmatch để tính toán tỷ lệ sai khác giữa hai ma trận ảnh.
-
-### 2. Kỹ Thuật Che Dữ Liệu Động (Dynamic Data Masking)
-
-```text
-[ GIAO DIEN THUC TE ]                        [ KHI SO SANH ANH SNAPSHOT ]
-+------------------------------------+       +------------------------------------+
-|  Welcome, John Doe                 |       |  Welcome, John Doe                 |
-|  Current Time: 14:32:05 (DYNAMIC!) | ----> |  Current Time: [ CHE HOP DONG ]    |
-|  Total Balance: $1,250.00          |       |  Total Balance: $1,250.00          |
-+------------------------------------+       +------------------------------------+
-  (Du lieu gio thay doi lien tuc              (Che phan tu gio bang mau hong,
-   se lam test fail neu khong mask!)           loai bo 100% loi False-Positive!)
-```
-
-### 3. Mã Nguồn Kiểm Thử Mẫu (`src/ui/specs/visual_regression.spec.ts`)
-
-```typescript
-import { test, expect } from '@playwright/test';
-
-test('Visual Regression on SauceDemo Inventory with Masking', async ({ page }) => {
-  await page.goto('https://www.saucedemo.com');
-  await page.getByPlaceholder('Username').fill('standard_user');
-  await page.getByPlaceholder('Password').fill('secret_sauce');
-  await page.getByRole('button', { name: 'Login' }).click();
-
-  // Cho danh sach san pham hien thi on dinh
-  await expect(page.locator('.inventory_list')).toBeVisible();
-
-  // So khop anh toan trang voi Dynamic Masking
-  await expect(page).toHaveScreenshot('inventory-landing.png', {
-    // Che cac vung anh san pham dong va badge de tranh false positive
-    mask: [
-      page.locator('.inventory_item_img'),
-      page.locator('.shopping_cart_badge'),
-    ],
-    maxDiffPixelRatio: 0.02, // Cho phep sai lech mau toi da 2% pixel
-    animations: 'disabled',  // Vo hieu hoa animation de anh chup on dinh tuyet doi
-  });
-});
-```
-
-### 4. Quy Trình Cập Nhật Golden Snapshots
-
-```bash
-# Tao moi hoac cap nhat anh Golden Snapshots khi giao dien co chu dich thay doi
-npx playwright test visual_regression.spec.ts --update-snapshots
-```
+- **Bản chất:** Đặc tả nhiệm vụ hiện thực ca kiểm thử tự động giao diện Web UI Ca 4: Kiểm thử hồi quy trực quan (Visual Regression Testing / Pixel-by-Pixel Comparison) kết hợp kỹ thuật che giấu dữ liệu động (**Dynamic Data Masking**) trên SauceDemo.
+- **Mục đích:** Phát hiện các lỗi vỡ giao diện âm thầm (CSS Regression, Font Misalignment, Sai lệch màu sắc/khoảng cách) mà các câu lệnh assertion DOM thông thường không thể bắt được.
+- **Điểm mấu chốt:** Sử dụng `expect(page).toHaveScreenshot({ mask: [...] })` để che đi các vùng dữ liệu biến đổi (hình ảnh sản phẩm, copyright text), triệt tiêu $100\%$ lỗi Flaky do lệch ảnh không mong muốn, đồng thời trích xuất được bộ 3 ảnh chẩn đoán: `actual.png`, `expected.png`, và `diff.png`.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Bối Cảnh Nghiệp Vụ (Business & Technical Context)
+
+- **Bối cảnh kỹ thuật:**
+  - Một bài test chức năng có thể pass $100\%$ (do các thẻ HTML `<button>`, `<input>` vẫn tồn tại đầy đủ trong DOM), nhưng giao diện người dùng thực tế có thể đã bị vỡ hoàn toàn do lỗi CSS: Nút bấm bị tràn màn hình, chữ bị đè lên nhau, hoặc icon bị mất màu.
+  - **Visual Regression Testing** trong Playwright giải quyết bài toán này bằng cách: Chụp ảnh màn hình thực tế của trang web và so sánh từng điểm ảnh (**Pixelmatch Engine**) với một bức ảnh chuẩn mẫu (**Golden Baseline Screenshot**). Nếu tỷ lệ sai khác vượt ngưỡng cho phép (`maxDiffPixelRatio` hoặc `maxDiffPixels`), bài test sẽ báo fail và xuất ra ảnh Visual Diff (vùng sai lệch được tô màu đỏ nổi bật).
+  - **Kỹ thuật Dynamic Data Masking:**
+    - Các trang web thực tế luôn có các phần tử dữ liệu động (Dynamic Elements) hoặc hình ảnh dễ biến động giữa các lần cập nhật.
+    - Nếu không che chắn, bài test so sánh ảnh sẽ liên tục bị báo lỗi giả (False Positive).
+    - Playwright cung cấp tùy chọn `mask: [locator1, locator2]` cho phép phủ một lớp màu hồng/xám trung tính đè lên các phần tử này trước khi thực hiện chụp ảnh so sánh pixel.
+
+---
+
+## 2. Các Yêu Cầu Thiết Kế Ca Kiểm Thử (Test Design Specifications)
+
+Người phụ trách cần thiết kế và hiện thực 3 kịch bản kiểm thử trong `tests/e2e/visual_regression.spec.ts`:
+
+### `TC-UI-VIS-01: Baseline Snapshot Generation & Page Comparison`
+- **Mục tiêu:** Khởi tạo ảnh mẫu chuẩn (Golden Master) và kiểm thử so sánh toàn bộ trang sản phẩm `/inventory.html`.
+- **Thao tác thực hiện:**
+  1. Đăng nhập vào SauceDemo bằng `standard_user`.
+  2. Thực hiện assertion: `await expect(page).toHaveScreenshot('inventory-baseline.png', { fullPage: true, maxDiffPixelRatio: 0.02 });`.
+- **Kỳ vọng:**
+  - Lần chạy đầu tiên (với cờ `--update-snapshots`): Sinh ra tệp ảnh mẫu chuẩn `tests/e2e/__snapshots__/inventory-baseline-chromium-linux.png`.
+  - Các lần chạy tiếp theo: So sánh đạt độ khớp $100\%$ (Zero Pixel Diff) và pass bài test.
+
+---
+
+### `TC-UI-VIS-02: Dynamic Data Masking on Variable Elements`
+- **Mục tiêu:** Kiểm tra kỹ thuật che giấu các phần tử có nội dung biến đổi hoặc hình ảnh sản phẩm.
+- **Thao tác thực hiện:**
+  1. Đăng nhập vào trang `/inventory.html`.
+  2. Áp dụng kỹ thuật Masking:
+     ```typescript
+     await expect(page).toHaveScreenshot('inventory-masked.png', {
+       mask: [
+         page.locator('.inventory_item_img'),
+         page.locator('.footer_copy'),
+       ],
+       maxDiffPixelRatio: 0.01,
+     });
+     ```
+- **Kỳ vọng:** Các vùng hình ảnh sản phẩm và dòng chữ chân trang được phủ kín lớp mask bảo vệ, đảm bảo bài test ổn định tuyệt đối dù ảnh sản phẩm có bị thay đổi.
+
+---
+
+### `TC-UI-VIS-03: Visual Regression Mutation Failure & 3-Image Diff Generation`
+- **Mục tiêu:** Cố tình tiêm lỗi CSS để kiểm chứng khả năng phát hiện sai lệch và trích xuất bộ 3 ảnh chẩn đoán.
+- **Thao tác thực hiện:**
+  1. Đăng nhập vào trang sản phẩm.
+  2. Tiêm mã JavaScript/CSS làm đổi màu nền của nút bấm:
+     ```typescript
+     await page.evaluate(() => {
+       const btn = document.querySelector('.btn_inventory') as HTMLElement;
+       if (btn) btn.style.backgroundColor = 'rgb(255, 0, 0)'; // Đổi sang màu đỏ
+     });
+     ```
+  3. Thực hiện so sánh với ảnh chuẩn: `await expect(page).toHaveScreenshot('inventory-baseline.png');`.
+- **Kỳ vọng:**
+  - Assertion phát hiện sai lệch pixel và ném lỗi thất bại.
+  - Playwright tự động lưu lại **bộ 3 tệp ảnh chẩn đoán** trong thư mục `test-results/`:
+    1. `actual.png`: Ảnh chụp thực tế chứa nút bấm màu đỏ.
+    2. `expected.png`: Ảnh mẫu chuẩn ban đầu.
+    3. `diff.png`: Ảnh chẩn đoán với các pixel sai khác được tô màu đỏ phát quang.
+
+---
+
+## 3. Câu Hỏi Cốt Lõi Cần Trả Lời & Kịch Bản Thất Bại (Failure Modes)
+
+1. **Thuật toán Pixelmatch trong Playwright tính toán khoảng cách màu sắc (Color Delta E) và tỷ lệ sai lệch điểm ảnh (`maxDiffPixelRatio`) như thế nào?**
+2. **Tại sao việc chạy Visual Regression trên các hệ điều hành khác nhau (macOS vs Linux vs Windows) có thể bị lệch điểm ảnh do cơ chế khử răng cưa font chữ (Font Anti-aliasing)?**
+3. **Làm thế nào để giải quyết triệt để sự khác biệt font chữ giữa các hệ điều hành khi chạy Visual Test trên CI?** (Giải pháp đóng gói quy trình test vào môi trường Docker Container đồng nhất).
+
+---
+
+## 4. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+1. **Tài Liệu Playwright Visual Testing:**
+   - [Playwright Official Guide - Visual Comparisons & Snapshots](https://playwright.dev/docs/test-snapshots)
+   - [Playwright API Reference - LocatorAssertions.toHaveScreenshot()](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-have-screenshot)
+2. **Thư Viện So Sánh Điểm Ảnh:**
+   - [Mapbox Pixelmatch - Fast Pixel-level Image Comparison Engine](https://github.com/mapbox/pixelmatch)
+
+---
+
+## 5. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo (`67_Bao_cao.docx` / `67_Bao_cao.tex` - Mục 3.3.4 Chương 3)
+Người phụ trách soạn thảo theo khung 5 phần học thuật:
+1. **Mục tiêu & Cơ chế kỹ thuật:** Phân tích nguyên lý Pixel-by-Pixel comparison của Pixelmatch, cơ chế tính sai số màu và giải pháp Dynamic Data Masking.
+2. **Đặc tả kịch bản & Dữ liệu kiểm thử:** Bảng các kịch bản kiểm thử Visual (Full Page Baseline, Dynamic Masking, CSS Mutation Failure).
+3. **Trích đoạn mã nguồn then chốt:** Trích dẫn 15 - 25 dòng code cấu hình `toHaveScreenshot({ mask: [...], maxDiffPixelRatio })` và đoạn code tiêm CSS đột biến.
+4. **Bằng chứng thực nghiệm & Phân tích log:** Ảnh chụp terminal chạy pass $100\%$, hình ảnh minh họa **bộ 3 ảnh chẩn đoán** (Actual, Expected, và Visual Diff).
+5. **Đánh giá rủi ro & Bài học kỹ thuật:** Phân tích hiện tượng lệch ảnh do môi trường OS (Font Rendering) và chiến lược chuẩn hóa môi trường bằng Docker Container.
+
+---
+
+## 6. Tiêu Chí Nghiệm Thu & Bằng Chứng Bàn Giao (Definition of Done)
 
 - [ ] **Mã Nguồn Kiểm Thử & Chạy Pass ($100\%$):**
-  - [ ] Tạo file `src/ui/specs/visual_regression.spec.ts`.
-  - [ ] Chạy lệnh `npx playwright test visual_regression.spec.ts --project=chromium` pass $100\%$.
-  - [ ] Thư mục `__snapshots__` chứa ảnh Golden Snapshot chuẩn.
+  - [ ] Tạo file `tests/e2e/visual_regression.spec.ts` với đầy đủ 3 ca test (`TC-UI-VIS-01` $\to$ `TC-UI-VIS-03`).
+  - [ ] Chạy lệnh `bunx playwright test tests/e2e/visual_regression.spec.ts --project=chromium --update-snapshots` để tạo baseline chuẩn.
+  - [ ] Chạy kiểm thử xác nhận pass $100\%$ với độ sai lệch trong ngưỡng cho phép ($< 1\%$).
 - [ ] **Bằng Chứng Git & Pull Request:**
   - [ ] Tạo nhánh `feat/wbs-3.4-ui-visual-regression`.
-  - [ ] Tạo Pull Request trên GitHub đính kèm ảnh chụp so sánh visual diff (nếu có) và ảnh test pass.
-  - [ ] Cập nhật link PR vào Google Sheets Master WBS.
-- [ ] **Báo Cáo:**
-  - [ ] Soạn thảo bản thảo Mục 3.8 Chương 3 cho Báo cáo Word (`67_Bao_cao.docx`).
-
-## Related Notes
-
-- [[Visual_Regression_Testing_and_Dynamic_Data_Masking]]
-- [[SauceDemo_Ecosystem_and_Selection_Rationale]]
-- [[Production_SDET_Anti_Patterns_and_Flaky_Test_Traps]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+  - [ ] Tạo Pull Request trên GitHub đính kèm ảnh baseline và bộ 3 ảnh Actual/Expected/Diff.
+- [ ] **Chất Lượng Học Thuật Trong Báo Cáo:**
+  - [ ] Hoàn thành đầy đủ 5 phần cho Mục 3.3.4 trong Báo cáo đồ án.

@@ -1,85 +1,78 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Deep architectural breakdown of POM, COM, Accessibility Role-based locators, Network Interception, and Definition of Done for WBS 1.4A
----
-
 # WBS 1.4A: Web UI Testing Capabilities and Design Patterns
 
 ## Metadata
 
 - **WBS Code:** `1.4A`
-- **Task Name:** Phân tích Năng lực Web UI (POM, Role-based Locators, page.route())
+- **Task Name:** Nghiên cứu Năng lực Web UI (POM, COM, Role Locators, Network Mocking)
 - **Assignee:** Lê Minh Quân (MSSV: 0306241143)
 - **Task Weight:** `2.5%`
-- **Deliverable Artifacts:** Mục 2.3 Chương 2 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** Mục 2.3 Chương 2 trong `67_Bao_cao.docx`.
 
 ## TL;DR
 
-Tài liệu đặc tả chuyên sâu 3 trụ cột kỹ thuật kiểm thử giao diện Web (Web UI Automation) của Playwright: Kiến trúc phân lớp Page Object Model (POM) kết hợp Component Object Model (COM), chiến lược định vị phần tử thế hệ mới dựa trên cây Accessibility Tree (Role-based Locators), và kỹ thuật can thiệp tầng mạng (Network Interception & Mocking qua `page.route()`).
-
-## Core Architectural Content to Document
-
-### 1. Kiến Trúc Phân Lớp POM & COM (Page Object & Component Object Model)
-
-```text
-src/ui/
-├── components/                 <-- Component Object Model (Tai su dung da trang)
-│   └── NavbarComponent.ts      <-- Menu, Shopping Cart Badge, Logout button
-├── pages/                      <-- Page Object Model (Dong goi nghiep vu tung trang)
-│   ├── LoginPage.ts            <-- Form dang nhap & validation error
-│   ├── InventoryPage.ts        <-- Danh sach san pham, filter gia, add-to-cart
-│   ├── CartPage.ts             <-- Gio hang, danh sach item, nut Checkout
-│   └── CheckoutPage.ts         <-- Form dien thong tin, tong tien, nut Finish
-└── specs/                      <-- Test Scenarios (Ngan gon, ro rang, de bao tri)
-    └── checkout.spec.ts        <-- Kich ban kiem thu E2E hoan chinh
-```
-
-- **Nguyên lý Single Responsibility:** Tách biệt hoàn toàn phần tử giao diện (Locators) và phương thức nghiệp vụ khỏi kịch bản kiểm thử (`expect`). Khi giao diện thay đổi, lập trình viên chỉ cần sửa đổi 1 file Page/Component duy nhất.
-- **Component Object Model (COM):** Đóng gói các thành phần giao diện lặp lại trên nhiều trang (Header, Navbar, Footer, Modal dialog) thành các class độc lập được nhúng (compose) vào các Page Objects.
-
-### 2. Chiến Lược Định Vị Bền Vững (Role-Based Locators & Accessibility Tree)
-
-- **Hệ thống phân cấp ưu tiên bộ định vị:**
-  1. `page.getByRole('button', { name: 'Submit' })` (Ưu tiên số 1: Tiếp cận dưới góc nhìn người dùng thực tế và chuẩn trợ năng Screen Reader).
-  2. `page.getByLabel('Username')` (Định vị qua nhãn liên kết form).
-  3. `page.getByPlaceholder('Enter your email')` (Định vị qua gợi ý ô nhập liệu).
-  4. `page.getByTestId('checkout-btn')` (Định vị qua thuộc tính kiểm thử tường minh `data-testid`).
-- **Nghiêm cấm (Anti-patterns):** Tuyệt đối không dùng XPath tuyệt đối (`/html/body/div[2]/...`) hoặc tên CSS class ngẫu nhiên (`.btn-primary-2x_9a`) vì chúng sẽ gãy vụn ngay khi ứng dụng cập nhật giao diện.
-
-### 3. Can Thiệp Tầng Mạng & Mocking (`page.route()`)
-
-```typescript
-// Gia lap Server bi loi HTTP 500 de kiem tra giao dien xu ly loi
-await page.route('**/api/v1/checkout', async (route) => {
-  await route.fulfill({
-    status: 500,
-    contentType: 'application/json',
-    body: JSON.stringify({ error: 'Internal Server Error' }),
-  });
-});
-```
-
-- **Khả năng can thiệp:** Playwright cho phép chặn bắt mọi HTTP Request ở cấp độ giao thức CDP trước khi nó rời khỏi trình duyệt.
-- **Ứng dụng thực tế:**
-  - Mock dữ liệu JSON trả về để kiểm thử các trường hợp dữ liệu biên (Edge Cases).
-  - Chặn các tài nguyên nặng (`.png`, `.woff2`, `.mp4`) qua lệnh `route.abort()` để tăng tốc độ chạy test suite lên gấp 3 lần.
+- **Bản chất:** Đặc tả nhiệm vụ nghiên cứu 3 trụ cột kỹ thuật kiểm thử Web UI: Mô hình phân lớp POM kết hợp COM, chiến lược định vị bền vững Role-Based Locators trên Accessibility Tree, và can thiệp tầng mạng `page.route()`.
+- **Mục đích:** Cung cấp câu hỏi định hướng và tài liệu chính thống để người phụ trách thiết lập chuẩn mực kiến trúc cho toàn bộ bộ kiểm thử E2E của đồ án.
+- **Điểm mấu chốt:** Nắm vững nguyên lý Composition trong COM và nguyên tắc triệt tiêu $100\%$ selector thô (XPath/CSS) trong kịch bản test.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Phạm Vi Nghiên Cứu (Research Scope)
 
-- [ ] **Báo cáo Word (`67_Bao_cao.docx`):**
-  - [ ] Soạn thảo đầy đủ Mục 2.3 Chương 2: Phân tích kiến trúc POM/COM, chiến lược Role-based Locators và kỹ thuật `page.route()`.
-  - [ ] Đính kèm sơ đồ cấu trúc thư mục POM/COM và code mẫu TypeScript minh họa.
-  - [ ] Bảng so sánh giữa Locator truyền thống (XPath/CSS) và Role-based Locators.
-- [ ] **Review & Bàn Giao:**
-  - [ ] Nộp bản thảo Word và Slide cho Trưởng nhóm nghiệm thu đúng hạn.
+- **Phạm vi trọng tâm:**
+  - Mô hình phân lớp hướng đối tượng: Page Object Model (POM) kết hợp Component Object Model (COM). Phân tách rõ ràng giữa cấu trúc giao diện, bộ định vị (Locators) và luồng kịch bản kiểm thử (`expect`).
+  - Chiến lược định vị bền vững (Resilient Locators): Hệ thống Role-Based Locators dựa trên cây trợ năng W3C WAI-ARIA (`getByRole`, `getByLabel`, `getByPlaceholder`, `getByTestId`), cơ chế Lazy Evaluation, và Strict Mode chống bắt nhầm phần tử.
+  - Can thiệp tầng mạng ở cấp độ CDP: Kỹ thuật Mocking API qua `page.route()`, giả lập lỗi máy chủ HTTP 500, sửa đổi response payload, và chặn tài nguyên rác.
+- **Ranh giới ngoài phạm vi (Non-goals):** Không trực tiếp viết mã kịch bản test E2E cụ thể (đã phân bổ tại Phase 3).
 
-## Related Notes
+---
 
-- [[Page_Object_Model_and_Component_Architecture]]
-- [[Role_Based_Locators_and_Accessibility_Tree]]
-- [[Network_Interception_and_Mocking_Mechanics]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+## 2. Các Câu Hỏi Cốt Lõi Cần Trả Lời (Core Guiding Questions)
+
+Người phụ trách cần nghiên cứu tài liệu chính thống để trả lời các câu hỏi sau:
+
+1. **Về Kiến Trúc Phân Lớp POM & COM:**
+   - Tại sao việc nhúng thẳng các chuỗi selector CSS/XPath vào file kịch bản test được coi là Anti-pattern trong tự động hóa?
+   - Page Object Model (POM) truyền thống gặp hạn chế gì khi các thành phần giao diện (như Navbar, Shopping Cart Badge, Sidebar, Footer) xuất hiện lặp lại ở nhiều trang khác nhau?
+   - Component Object Model (COM) áp dụng nguyên lý "Composition over Inheritance" như thế nào để đóng gói các thành phần dùng chung và nhúng vào các Page Objects lớn hơn?
+2. **Về Chiến Lược Định Vị Bền Vững (Role-Based Locators):**
+   - Trình bày thứ tự ưu tiên của bảng bộ định vị Playwright (Tier 1: `getByRole`, Tier 2: `getByLabel` / `getByPlaceholder`, Tier 3: `getByTestId`).
+   - Tại sao `getByRole` được khuyến nghị là ưu tiên số 1 theo tiêu chuẩn W3C WAI-ARIA (mô phỏng chính xác cách người dùng thực tương tác và người khuyết tật dùng trình đọc màn hình)?
+   - Cơ chế Strict Mode của Playwright hoạt động như thế nào khi một locator trả về $\ge 2$ phần tử trong DOM?
+3. **Về Can Thiệp Tầng Mạng & Mocking (`page.route()`):**
+   - Kỹ thuật `page.route()` can thiệp vào request mạng ở tầng nào bên trong trình duyệt (CDP Network Domain)?
+   - Làm thế nào để giả lập mã lỗi `HTTP 500 Internal Server Error` hoặc làm trễ response $5\text{s}$ để kiểm tra khả năng chịu lỗi (Graceful Degradation) của UI mà không cần can thiệp vào backend thật?
+
+---
+
+## 3. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+Người phụ trách bắt buộc phải đọc và trích dẫn từ các nguồn chuẩn sau:
+
+1. **Tài Liệu Chính Thống Playwright:**
+   - [Playwright Page Object Model Architecture Guide](https://playwright.dev/docs/pom)
+   - [Playwright Locators & Accessibility Tree Practices](https://playwright.dev/docs/locators)
+   - [Playwright Network Mocking & Interception](https://playwright.dev/docs/mock)
+2. **Tiêu Chuẩn Trợ Năng Quốc Tế:**
+   - [W3C WAI-ARIA Authoring Practices Guide (APG)](https://www.w3.org/WAI/ARIA/apg/)
+
+---
+
+## 4. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo Word (`67_Bao_cao.docx` - Mục 2.3 Chương 2)
+- **2.3.1. Kiến trúc phân lớp kép POM & COM:**
+  - Phân tích nguyên lý Single Responsibility và sơ đồ cây thư mục `pages/` kết hợp `pages/components/`.
+  - Minh họa mối quan hệ giữa Page Object và Component Object bằng sơ đồ khối.
+- **2.3.2. Chiến lược định vị bền vững với Role-Based Locators:**
+  - Bảng thứ tự ưu tiên các loại Locator.
+  - Phân tích cơ chế Strict Mode và Lazy Evaluation.
+- **2.3.3. Can thiệp tầng mạng & API Mocking:** Hướng dẫn sử dụng `page.route()` để chặn request và mock response lỗi.
+
+---
+
+## 5. Tiêu Chí Đánh Giá & Nghiệm Thu (Evaluation Rubric & DoD)
+
+- [ ] **Khả Năng Phản Biện:** Giải thích được sự khác biệt giữa POM truyền thống và POM kết hợp COM, giải thích nguyên lý hoạt động của `page.route()`.
+- [ ] **Chất Lượng Học Thuật:**
+  - [ ] Sơ đồ cây thư mục phân lớp POM/COM tự vẽ rõ ràng, logic.
+  - [ ] Dẫn nguồn đúng đặc tả W3C WAI-ARIA theo chuẩn IEEE.

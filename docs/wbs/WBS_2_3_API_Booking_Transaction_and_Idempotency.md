@@ -1,82 +1,128 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Technical test specification, Idempotency-Key validation mechanics, and Definition of Done for WBS 2.3
----
-
 # WBS 2.3: API Test Suite - Booking Transaction and Idempotency Verification
 
 ## Metadata
 
 - **WBS Code:** `2.3`
-- **Task Name:** API Case 3: Booking Transaction & Idempotency Boundary Verification
+- **Task Name:** API Ca 3: Booking Transaction, Webhook & Idempotency
 - **Assignee:** Đặng Duy Lam (MSSV: 0306241125)
 - **Task Weight:** `7.5%`
-- **Deliverable Artifacts:** File mã nguồn `src/api/specs/booking_idempotency.spec.ts`, Pull Request GitHub, Mục 3.3 Chương 3 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** File mã nguồn `tests/api/booking.spec.ts`, Pull Request GitHub, Mục 3.2.3 Chương 3 trong `67_Bao_cao.docx` / `67_Bao_cao.tex`.
 
 ## TL;DR
 
-Tài liệu đặc tả kỹ thuật kịch bản kiểm thử API Ca 3: Kiểm thử giao dịch đặt vé thanh toán và xác thực tính bất biến Idempotency (chuẩn Header `Idempotency-Key` UUID v4). Đảm bảo hệ thống xử lý an toàn trước các sự cố mạng chập chờn hoặc người dùng nhấp đúp thao tác, bảo vệ tuyệt đối không trừ tiền trùng lặp và không tạo bản ghi rác trong cơ sở dữ liệu.
-
-## Core Architectural Content to Implement
-
-### 1. Bản Chất Kỹ Thuật Của Tính Bất Biến (Idempotency) Trong Giao Dịch
-
-- **Định nghĩa toán học:** Một thao tác $f(x)$ được gọi là Idempotent nếu áp dụng nhiều lần liên tiếp không làm thay đổi trạng thái hệ thống so với áp dụng một lần duy nhất:
-  $$f(f(x)) = f(x)$$
-- **Vấn đề thực tế trong E-Commerce & Vé:**
-  1. Client gửi request thanh toán nhưng mạng bị rớt trước khi nhận response $\to$ Client tự động retry gửi lại request.
-  2. Người dùng nóng vội click 2 - 3 lần liên tiếp vào nút "Thanh Toán Ngay".
-  3. Nếu không có cơ chế Idempotency, tài khoản khách hàng sẽ bị trừ tiền 2 lần và sinh ra 2 mã vé khác nhau cho 1 giao dịch.
-
-### 2. Cơ Chế Header `Idempotency-Key` (UUID v4)
-
-```text
-+---------------+   Request 1: POST /booking (Key: K_1, Seat: A12)   +---------------+
-|  Playwright   | -------------------------------------------------> | Backend / DB  |
-|  Test Runner  | <------------------------------------------------- | (Tao Booking) |
-+---------------+               Response: 201 Created (Booking ID: 99)|               |
-        |                                                            +---------------+
-        |                                                                    | Luu Cache (Key: K_1, Payload Hash, Resp: 99)
-        | Request 2: POST /booking (Gửi lại y hệt Key: K_1)                  v
-        +----------------------------------------------------------> +---------------+
-                                                                     | Backend Redis |
-        <----------------------------------------------------------- | (Doc tu Cache)|
-                        Response: 200 OK (Booking ID: 99)            +---------------+
-              (KHONG tao them ban ghi moi, KHONG tru tien lan 2!)
-```
-
-### 3. Danh Sách Các Ca Kiểm Thử Bắt Buộc (Test Scenarios)
-
-1. **`TC-IDEMP-01: First Execution (Happy Path)`**
-   - Tạo UUID v4 ngẫu nhiên cho `Idempotency-Key`.
-   - Gửi request tạo booking $\to$ Kiểm tra nhận `HTTP 201 Created`, cơ sở dữ liệu tăng đúng 1 bản ghi.
-2. **`TC-IDEMP-02: Duplicate Request with Identical Key & Payload`**
-   - Gửi lại request với cùng `Idempotency-Key` và cùng body $\to$ Kiểm tra nhận `HTTP 200/201`, mã `bookingId` trả về giống hệt lần 1, cơ sở dữ liệu không đổi.
-3. **`TC-IDEMP-03: Key Conflict with Mutated Payload (Tấn công tráo dữ liệu)`**
-   - Sử dụng lại `Idempotency-Key` của lần 1 nhưng thay đổi nội dung payload (ví dụ đổi `amount` hoặc `seatId`) $\to$ Backend phát hiện chữ ký payload hash không khớp, từ chối với mã lỗi `HTTP 422 Unprocessable Entity` hoặc `HTTP 400 Bad Request`.
-4. **`TC-IDEMP-04: Concurrency Race on Same Idempotency Key`**
-   - Bắn đồng thời 5 requests với cùng 1 `Idempotency-Key` qua `Promise.all()` $\to$ Kiểm tra đúng duy nhất 1 booking được tạo ra và 5 responses đều trả về cùng 1 kết quả.
+- **Bản chất:** Đặc tả nhiệm vụ hiện thực bộ kiểm thử tự động API Ca 3: Giao dịch xác nhận thanh toán đặt vé và xác thực tính bất biến Idempotency thông qua tiêu đề `idempotency-key` (UUID v4) trên các endpoint `POST /bookings/reserve` và `POST /bookings/confirm` của hệ thống `ticket-booking`.
+- **Mục đích:** Đảm bảo hệ thống xử lý an toàn tuyệt đối khi người dùng nhấp đúp (Double Click) nút thanh toán hoặc khi mạng chập chờn kích hoạt cơ chế tự động gửi lại (Client Retry).
+- **Điểm mấu chốt:** Kiểm chứng cơ chế lưu bộ nhớ đệm kết quả Idempotency trong Redis (`idempotency:booking:${userId}:${key}`), đảm bảo không trừ tiền hai lần, không tạo bản ghi thanh toán thừa và trả về cùng một kết quả ban đầu.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Bối Cảnh Nghiệp Vụ (Business & Technical Context)
+
+- **Bối cảnh hệ thống `ticket-booking` (NestJS Booking & Payment Module):**
+  - **Endpoints Trọng Yếu:**
+    1. `POST /bookings/reserve`: Đặt giữ chỗ ghế tạm thời (bắt buộc kèm header `idempotency-key`).
+    2. `POST /bookings/confirm`: Xác nhận thanh toán và xuất vé chính thức (bắt buộc kèm header `idempotency-key`).
+  - **Cấu Trúc Header & Payload Xác Nhận Đơn Hàng (`ConfirmBookingDto`):**
+    - Header bắt buộc: `Authorization: Bearer <token>`, `idempotency-key: <UUIDv4>`.
+    - Body:
+      ```json
+      {
+        "bookingId": "019fa8bc-8f4d-7000-b366-e691f45cfb8f",
+        "orderCode": 123456,
+        "paymentMethod": "payos",
+        "transactionId": "PAYOS-TX-987654",
+        "amount": 100000
+      }
+      ```
+  - **Cơ Chế Xử Lý Idempotency với Redis Cache:**
+    - Khi nhận request kèm header `idempotency-key: K_1`:
+      1. Backend kiểm tra trong Redis với khóa `idempotency:booking:${userId}:${K_1}`.
+      2. Nếu tìm thấy dữ liệu trong Cache: Backend trả về ngay lập tức JSON response đã lưu trước đó mà **hoàn toàn không thực thi lại logic trừ tiền, không ghi thêm bản ghi vào bảng `payments`, và không sinh thêm vé mới trong bảng `tickets`**.
+      3. Nếu chưa có: Backend mở Transaction thực hiện ghi nhận thanh toán, xuất vé, lưu kết quả phản hồi vào Redis với thời hạn TTL 24 giờ (`24h`), rồi trả về kết quả `HTTP 200 OK` cho Client.
+    - Nếu request gửi lên thiếu header `idempotency-key`: Backend ném lỗi `BadRequestException` (`HTTP 400 Bad Request`) với thông báo: *"Idempotency key is required"*.
+
+---
+
+## 2. Các Yêu Cầu Thiết Kế Ca Kiểm Thử (Test Design Specifications)
+
+Người phụ trách cần thiết kế và hiện thực tối thiểu 4 kịch bản kiểm thử tự động trong `tests/api/booking.spec.ts`:
+
+### `TC-IDEMP-01: First Execution (Happy Path Booking Confirmation)`
+- **Thao tác:**
+  1. Giữ chỗ ghế thành công nhận `bookingId`.
+  2. Sinh một chuỗi UUID v4 ngẫu nhiên làm `idempotency-key: K_1`.
+  3. Gửi request `POST /bookings/confirm` kèm header `idempotency-key: K_1` và payload hợp lệ.
+- **Kỳ vọng & Invariants:**
+  - Mã trạng thái: `HTTP 200 OK`.
+  - Cấu trúc response: `{ success: true, data: { bookingId, paymentId, transactionId, status: "confirmed", confirmedAt, totalPrice, tickets } }`.
+  - Trạng thái đơn hàng chuyển thành `confirmed`, danh sách `tickets` sinh ra mã vé chính thức (`ticketCode`).
+
+---
+
+### `TC-IDEMP-02: Duplicate Request with Identical Idempotency Key (Network Retry Simulation)`
+- **Thao tác:** Gửi lại chính xác request xác nhận thanh toán trên với cùng `idempotency-key: K_1` và cùng nội dung body.
+- **Kỳ vọng & Bất biến toán học (Mathematical Invariants):**
+  - Mã trạng thái: `HTTP 200 OK`.
+  - Dữ liệu `paymentId`, `transactionId`, `bookingId`, `confirmedAt` và danh sách `tickets` trả về giống hệt $100\%$ so với lần 1.
+  - **Bất biến cơ sở dữ liệu:** Số lượng bản ghi trong bảng `payments` và `tickets` không thay đổi (không sinh ra payment trùng lặp).
+
+---
+
+### `TC-IDEMP-03: Missing Mandatory Idempotency Key Header Validation`
+- **Thao tác:** Gửi request `POST /bookings/confirm` hoặc `POST /bookings/reserve` nhưng **cố tình không truyền header `idempotency-key`**.
+- **Kỳ vọng:**
+  - Mã trạng thái: `HTTP 400 Bad Request`.
+  - Header `content-type` là `application/problem+json`.
+  - Response body chứa `status: 400`, `title: "Bad Request"`, `detail: "Idempotency key is required"`.
+
+---
+
+### `TC-IDEMP-04: Concurrent Sockets Flooding on Same Idempotency Key (Double Click Attack)`
+- **Thao tác:** Bắn đồng thời 5 requests `POST /bookings/confirm` mang cùng 1 `idempotency-key: K_1` thông qua `Promise.all()`.
+- **Kỳ vọng:**
+  - Cả 5 requests đều nhận mã trạng thái `HTTP 200 OK` và trả về cùng một mã `paymentId`.
+  - Duy nhất 1 giao dịch thanh toán được ghi nhận trong cơ sở dữ liệu.
+
+---
+
+## 3. Câu Hỏi Cốt Lõi Cần Trả Lời & Kịch Bản Thất Bại (Failure Modes)
+
+1. **Tại sao các thao tác thanh toán tài chính bắt buộc phải dùng tiêu đề `Idempotency-Key` dạng UUID v4 thay vì để Backend tự sinh mã?**
+2. **Nếu Redis bị sự cố (Crash / Network Partition), làm thế nào cơ sở dữ liệu PostgreSQL (Unique Constraint trên `orderCode` / `transactionId`) bảo vệ hệ thống không bị trừ tiền 2 lần?**
+3. **Chiến lược Fail-Open trong việc đọc Idempotency Cache của `BookingService` giúp duy trì tính sẵn sàng (Availability) của hệ thống ra sao?**
+
+---
+
+## 4. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+1. **Chuẩn Giao Thức & Thực Tiễn Công Nghiệp:**
+   - [IETF Internet-Draft - The Idempotency-Key HTTP Header Field](https://datatracker.ietf.org/doc/html/draft-ietf-httpapi-idempotency-key-header)
+   - [Stripe Engineering Documentation - Designing Robust Idempotent APIs](https://stripe.com/docs/api/idempotent_requests)
+2. **Tài Liệu Playwright API Testing:**
+   - [Playwright API Testing Official Guide](https://playwright.dev/docs/api-testing)
+
+---
+
+## 5. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo (`67_Bao_cao.docx` / `67_Bao_cao.tex` - Mục 3.2.3 Chương 3)
+Người phụ trách soạn thảo theo khung 5 phần học thuật:
+1. **Mục tiêu & Cơ chế kỹ thuật:** Phân tích nguyên lý toán học của tính Idempotency ($f(f(x)) = f(x)$) và cơ chế lưu cache Redis `idempotency:booking:${userId}:${key}`.
+2. **Đặc tả kịch bản & Dữ liệu kiểm thử:** Bảng thông số 4 ca test (`TC-IDEMP-01` $\to$ `TC-IDEMP-04`) với các endpoints `/bookings/reserve`, `/bookings/confirm`.
+3. **Trích đoạn mã nguồn then chốt:** Trích dẫn 15 - 25 dòng code khởi tạo UUID v4 header và kiểm tra tính bất biến của dữ liệu thanh toán.
+4. **Bằng chứng thực nghiệm & Phân tích log:** Ảnh chụp terminal chạy pass $100\%$, log JSON so sánh 2 phản hồi trùng lặp khớp nhau từng trường.
+5. **Đánh giá rủi ro & Bài học kỹ thuật:** Phân tích rủi ro tài chính của hiện tượng Double-Charge và giải pháp kết hợp Redis Cache + DB Unique Constraints.
+
+---
+
+## 6. Tiêu Chí Nghiệm Thu & Bằng Chứng Bàn Giao (Definition of Done)
 
 - [ ] **Mã Nguồn Kiểm Thử & Chạy Pass ($100\%$):**
-  - [ ] Tạo file `src/api/specs/booking_idempotency.spec.ts`.
-  - [ ] Chạy lệnh `npx playwright test booking_idempotency.spec.ts --project=api-tests` pass $100\%$.
-  - [ ] Xác nhận kiểm tra đầy đủ cả 4 scenarios trên.
+  - [ ] Tạo file `tests/api/booking.spec.ts`.
+  - [ ] Chạy lệnh `bunx playwright test tests/api/booking.spec.ts --project=api` pass $100\%$ cả 4 kịch bản.
+  - [ ] Đảm bảo sinh đúng mã UUID v4 cho header `idempotency-key`.
 - [ ] **Bằng Chứng Git & Pull Request:**
   - [ ] Tạo nhánh `feat/wbs-2.3-api-booking-idempotency`.
-  - [ ] Tạo Pull Request trên GitHub với mô tả chi tiết và ảnh chụp kết quả test pass.
-  - [ ] Cập nhật link PR vào Google Sheets Master WBS.
-- [ ] **Báo Cáo:**
-  - [ ] Soạn thảo bản thảo Mục 3.3 Chương 3 cho Báo cáo Word (`67_Bao_cao.docx`).
-
-## Related Notes
-
-- [[API_Test_Data_Lifecycle_and_State_Isolation]]
-- [[Service_Object_Model_and_API_Request_Chaining]]
-- [[RFC_9457_Problem_Details_and_API_Boundary_Testing]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+  - [ ] Tạo Pull Request trên GitHub với mô tả chi tiết, log JSON và ảnh test pass.
+- [ ] **Chất Lượng Học Thuật Trong Báo Cáo:**
+  - [ ] Hoàn thành đầy đủ 5 phần cho Mục 3.2.3 trong Báo cáo đồ án.

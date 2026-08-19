@@ -1,57 +1,82 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Direct technical and architectural comparison matrix between Playwright and TestComplete with Definition of Done for WBS 1.5A
----
-
 # WBS 1.5A: Playwright vs TestComplete Architectural Comparison
 
 ## Metadata
 
 - **WBS Code:** `1.5A`
-- **Task Name:** So sánh đối sánh Playwright vs TestComplete (Kiến trúc & Chi phí TCO)
+- **Task Name:** Nghiên cứu Đối sánh Playwright vs TestComplete (Kiến trúc & Chi phí TCO)
 - **Assignee:** Ngô Gia Bảo (MSSV: 0306241090)
 - **Task Weight:** `2.0%`
-- **Deliverable Artifacts:** Mục 4.1A Chương 4 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** Mục 4.1 Chương 4 trong `67_Bao_cao.docx` / `67_Bao_cao.tex`.
 
 ## TL;DR
 
-Tài liệu đặc tả nội dung so sánh đối kháng trực diện giữa Playwright (Microsoft) và TestComplete (SmartBear) - trọng tâm của đề tài môn học. Phân tích chi tiết sự khác biệt về kiến trúc điều khiển trình duyệt, mô hình cấp phép bản quyền, tổng chi phí sở hữu (Total Cost of Ownership - TCO), và khả năng tương thích với hạ tầng CI/CD trên Docker/Linux.
-
-## Core Architectural Content to Document
-
-### 1. Ma Trận Đối Soát Trực Diện: Playwright vs TestComplete
-
-| Tiêu Chí So Sánh | Playwright (Microsoft) | TestComplete (SmartBear) |
-|---|---|---|
-| **Kiến trúc điều khiển** | **WebSocket CDP / Bi-directional Pipe** trực tiếp vào lõi trình duyệt. | **OS Native Hooks / COM / Accessibility API** cồng kềnh cấp hệ điều hành. |
-| **Tốc độ thực thi** | **Rất nhanh** (Vài mili-giây cho mỗi action, tối ưu RAM). | **Chậm & Nặng nề** (Phụ thuộc vào giao diện đồ họa Windows). |
-| **Chi phí bản quyền (TCO)** | **Miễn phí $100\%$** (Mã nguồn mở Apache 2.0). Chi phí license = $0. | **Thương mại rất đắt** (~$2,000 - $4,000 / seat / năm). |
-| **Hạ tầng CI/CD & Headless** | Chạy xuất sắc trên **Linux Docker Containers siêu nhẹ**, hỗ trợ Sharding. | Đòi hỏi **máy ảo Windows đầy đủ (GUI Desktop)** có cài license server. |
-| **Kiểm thử đa tầng** | Hợp nhất **Web UI + API Automation** trong 1 codebase duy nhất. | Phải cấu hình các module riêng biệt hoặc mua thêm công cụ ReadyAPI. |
-| **Cơ chế chống Flaky** | **Auto-waiting 5 bước** & Web-first Assertions tích hợp sẵn. | Phải cấu hình timeout thủ công hoặc viết hàm chờ phức tạp. |
-| **Phương thức tiếp cận** | **Code-First (TypeScript / JS / Python / C# / Java)** chuẩn kỹ nghệ. | **Low-Code / Record-Playback / Scripting cũ** (VBScript, JScript). |
-
-### 2. 3 Luận Điểm Then Chốt Trước Hội Đồng Giảng Viên
-
-1. **Về Chi Phí Đầu Tư & Rào Cản Doanh Nghiệp:** TestComplete đặt ra gánh nặng tài chính khổng lồ cho doanh nghiệp vừa và nhỏ với chi phí bản quyền hàng năm, trong khi Playwright là mã nguồn mở hoàn toàn miễn phí được bảo trợ vững chắc bởi Microsoft.
-2. **Về Khả Năng Mở Rộng Trên Hạ Tầng Hiện Đại (Cloud & Containerization):** Playwright được sinh ra cho kỷ nguyên Cloud-native, có thể đóng gói vào các Docker Image Linux siêu nhẹ (~$500\text{MB}$) để chạy song song hàng nghìn bài test trên GitHub Actions/GitLab CI mà không tốn chi phí duy trì máy ảo Windows nặng nề.
-3. **Về Tính Thống Nhất & Tốc Độ Phát Triển:** Playwright cho phép đội ngũ SDET và Developer cùng làm việc trên cùng một ngôn ngữ lập trình (TypeScript), chia sẻ chung types và luồng kiểm thử từ tầng API đến Web UI.
+- **Bản chất:** Đặc tả nhiệm vụ nghiên cứu đối soát trực diện giữa Playwright (Mã nguồn mở, Microsoft) và TestComplete (Thương mại đóng phí, SmartBear).
+- **Mục đích:** Cung cấp câu hỏi định hướng và tài liệu chính thống để người phụ trách xây dựng luận cứ bảo vệ trước hội đồng giảng viên về kiến trúc điều khiển, chi phí bản quyền (TCO) và năng lực tích hợp CI/CD.
+- **Điểm mấu chốt:** Nêu bật ưu thế vượt trội của Playwright về tốc độ thực thi, chi phí $0$ license, và khả năng chạy Headless trên Linux Docker Containers.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Phạm Vi Nghiên Cứu (Research Scope)
 
-- [ ] **Báo cáo Word (`67_Bao_cao.docx`):**
-  - [ ] Soạn thảo đầy đủ Mục 4.1A Chương 4: Bảng ma trận so sánh 7 tiêu chí giữa Playwright và TestComplete.
-  - [ ] Phân tích sâu 3 luận điểm chứng minh tính vượt trội của Playwright so với TestComplete trong môi trường công nghiệp.
-  - [ ] Định dạng bảng biểu chuẩn, canh lề đẹp mắt.
-- [ ] **Review & Bàn Giao:**
-  - [ ] Nộp bản thảo Word và Slide cho Trưởng nhóm nghiệm thu đúng hạn.
+- **Phạm vi trọng tâm:**
+  - So sánh đối kháng giữa 2 trường phái: Công cụ mã nguồn mở thế hệ mới (Playwright) và Công cụ thương mại trả phí truyền thống (TestComplete).
+  - Phân tích 7 tiêu chí so sánh cốt lõi:
+    1. Kiến trúc điều khiển: WebSocket CDP/Pipe trực tiếp vào Browser Engine vs OS Native Hooks / Windows COM.
+    2. Tốc độ thực thi & Tối ưu RAM: Cơ chế BrowserContext siêu nhẹ vs Tiến trình desktop nặng nề.
+    3. Chi phí bản quyền tổng sở hữu (TCO): Miễn phí $100\%$ Apache 2.0 vs Bản quyền thương mại (~$2,000 - $4,000 / seat / năm).
+    4. Hạ tầng CI/CD & Containerization: Khả năng đóng gói Linux Docker siêu nhẹ vs Ràng buộc máy ảo Windows đầy đủ (GUI Desktop).
+    5. Kiểm thử đa tầng: Hợp nhất Web UI + API trong 1 codebase vs Cần mua thêm module hoặc công cụ ngoài (ReadyAPI).
+    6. Cơ chế chống Flaky: Auto-waiting 5 bước tích hợp sẵn vs Cấu hình timeout thủ công.
+    7. Phương thức tiếp cận: Code-First hiện đại (TypeScript) vs Low-Code / Record-Playback / VBScript cũ.
+  - Xây dựng 3 luận điểm đanh thép nhất để bảo vệ lựa chọn Playwright trước hội đồng giảng viên.
+- **Ranh giới ngoài phạm vi (Non-goals):** Không đi sâu vào so sánh với Selenium/Cypress (đã phân bổ tại WBS 1.5B).
 
-## Related Notes
+---
 
-- [[Playwright_vs_TestComplete_Architectural_Comparison]]
-- [[Playwright_Hard_Technical_Boundaries_and_Non_Goals]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+## 2. Các Câu Hỏi Cốt Lõi Cần Trả Lời (Core Guiding Questions)
+
+Người phụ trách cần nghiên cứu tài liệu chính thống để trả lời các câu hỏi sau:
+
+1. **Về Kiến Trúc Điều Khiển & Hạ Tầng HĐH:**
+   - TestComplete can thiệp vào ứng dụng ở cấp độ nào (OS Native Hooks, Accessibility APIs, Windows COM)? Tại sao kiến trúc này khiến TestComplete bị ràng buộc chặt chẽ vào hệ điều hành Windows và không thể chạy trên các container Linux Docker siêu nhẹ?
+   - Playwright kết nối trực tiếp vào lõi trình duyệt qua WebSocket CDP mang lại lợi thế gì về tính độc lập nền tảng (Platform Agnostic)?
+2. **Về Chi Phí Bản Quyền (Total Cost of Ownership - TCO):**
+   - Mức giá bản quyền của TestComplete hiện tại là bao nhiêu trên mỗi người dùng mỗi năm?
+   - Đối với một doanh nghiệp có quy mô 15 - 20 kỹ sư kiểm thử và hạ tầng CI/CD chạy 10 máy ảo song song, bài toán chi phí tài chính chênh lệch giữa TestComplete và Playwright ($0 license) là bao nhiêu?
+3. **Về Kiểm Thử Đa Tầng & Tính Đồng Nhất Codebase:**
+   - Khi cần xây dựng một kịch bản E2E kết hợp (Gọi API tạo dữ liệu $\to$ Mở Web UI kiểm tra $\to$ Gọi API dọn dẹp dữ liệu), Playwright giải quyết như thế nào trong cùng 1 file test? TestComplete đòi hỏi quy trình phức tạp ra sao?
+4. **Về 3 Luận Điểm Bảo Vệ Trước Hội Đồng Giảng Viên:**
+   - Trình bày 3 luận điểm thuyết phục nhất để trả lời câu hỏi: *"Tại sao nhóm không chọn một công cụ thương mại có sẵn giao diện đồ họa hoàn chỉnh như TestComplete mà lại chọn Playwright?"*
+
+---
+
+## 3. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+Người phụ trách bắt buộc phải đọc và trích dẫn từ các nguồn chuẩn sau:
+
+1. **Tài Liệu Chính Thống SmartBear TestComplete:**
+   - [SmartBear TestComplete Documentation (Official)](https://support.smartbear.com/testcomplete/docs/)
+   - [SmartBear Licensing & Architecture Overview](https://support.smartbear.com/testexecute/docs/reference/tc-doc.html)
+   - [SmartBear Official Product Pricing](https://smartbear.com/pricing/)
+2. **Tài Liệu Chính Thống Microsoft Playwright:**
+   - [Playwright Docker & CI/CD Containerization Guide](https://playwright.dev/docs/docker)
+   - [Why Playwright? Architectural Philosophy](https://playwright.dev/docs/why-playwright)
+
+---
+
+## 4. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo (`67_Bao_cao.docx` / `67_Bao_cao.tex` - Mục 4.1 Chương 4)
+- **4.1.1. Ma trận đối soát 7 tiêu chí kiến trúc & kinh tế:** Xây dựng bảng so sánh chi tiết giữa Playwright và TestComplete.
+- **4.1.2. Phân tích chi phí bản quyền tổng sở hữu (TCO):** Phân tích bài toán chi phí tài chính giữa Playwright ($0 license) và TestComplete (~$2,000 - $4,000 / seat / năm).
+- **4.1.3. Khả năng đóng gói container Linux Docker & tích hợp CI/CD:** Phân tích ưu thế containerization siêu nhẹ của Playwright so với ràng buộc GUI Desktop Windows của TestComplete.
+- **4.1.4. 3 Luận điểm bảo vệ lựa chọn Playwright trước hội đồng:** Trình bày 3 luận điểm cốt lõi bảo vệ trước hội đồng giảng viên.
+
+---
+
+## 5. Tiêu Chí Đánh Giá & Nghiệm Thu (Evaluation Rubric & DoD)
+
+- [ ] **Khả Năng Phản Biện:** Trình bày tự tin, mạch lạc 3 luận điểm bảo vệ trước câu hỏi chất vấn của Giảng viên.
+- [ ] **Chất Lượng Học Thuật:**
+  - [ ] Bảng so sánh có số liệu giá tiền, thông số kỹ thuật rõ ràng.
+  - [ ] Dẫn nguồn đúng tài liệu SmartBear và Microsoft theo chuẩn IEEE.

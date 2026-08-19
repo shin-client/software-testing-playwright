@@ -1,95 +1,109 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Technical test specification, asynchronous socket flooding mechanics, and Definition of Done for WBS 2.2 - High-Contention Concurrency & Redis Redlock
----
-
 # WBS 2.2: API Test Suite - High-Contention Concurrency and Redis Redlock
 
 ## Metadata
 
 - **WBS Code:** `2.2`
-- **Task Name:** API Ca 2: High-Contention Concurrency & Redis Redlock Race Condition Test
+- **Task Name:** API Ca 2: Concurrency Race Condition & Redis Redlock
 - **Assignee:** Trần Văn Ngọc (MSSV: 0306241131)
 - **Task Weight:** `7.5%`
-- **Deliverable Artifacts:** File mã nguồn `src/api/specs/concurrency_redlock.spec.ts`, Pull Request GitHub, Mục 3.2 Chương 3 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** File mã nguồn `tests/api/concurrency.spec.ts`, Pull Request GitHub, Mục 3.2.2 Chương 3 trong `67_Bao_cao.docx` / `67_Bao_cao.tex`.
 
 ## TL;DR
 
-Tài liệu đặc tả kỹ thuật kịch bản kiểm thử API Ca 2: Kiểm thử điều kiện chạy đua (Race Condition) và tranh chấp tài nguyên cao độ (High-Contention Concurrency) trong hệ thống đặt vé. Áp dụng kỹ thuật Asynchronous Socket Flooding với `Promise.all()` để bắn đồng thời $N$ request giữ chỗ trên cùng một mã ghế duy nhất, kiểm chứng cơ chế khóa phân tán Redis Redlock / Pessimistic Locking ngăn ngừa $100\%$ hiện tượng đặt trùng vé (Double-booking).
-
-## Core Architectural Content to Implement
-
-### 1. Bản Chất Kỹ Thuật: Bài Toán Race Condition & Double-Booking
-
-```text
-Time (ms)   User 1 (Request 1)              User 2 (Request 2)              Database / Redis
----------   ------------------              ------------------              ----------------
-  T0        SELECT status FROM seats (FREE)                                 Seat A12: FREE
-  T1                                        SELECT status FROM seats (FREE) Seat A12: FREE
-  T2        UPDATE seats SET status=HELD                                    Seat A12: HELD (User 1)
-  T3                                        UPDATE seats SET status=HELD    Seat A12: HELD (User 2 - DOUBLE BOOKING!)
-```
-
-- **Lỗi Naive Check:** Nếu Backend chỉ kiểm tra trạng thái trước khi cập nhật mà không có cơ chế khóa (Locking), hai luồng xử lý song song sẽ cùng đọc thấy ghế đang rỗng và cùng ghi đè quyền sở hữu $\to$ Thảm họa Double-booking.
-- **Cơ chế Khóa Phân Tán (Redis Redlock / DB Pessimistic Lock):**
-  - Trước khi đọc hoặc ghi, tiến trình phải giành được khóa duy nhất trên Key `lock:seat:A12`.
-  - Luồng đến trước giữ khóa $\to$ Thành công (`HTTP 200/201`).
-  - Toàn bộ luồng đến sau không thể lấy khóa $\to$ Bị từ chối ngay lập tức (`HTTP 409 Conflict`).
-
-### 2. Kỹ Thuật Asynchronous Socket Flooding Với `Promise.all()`
-
-```typescript
-// src/api/specs/concurrency_redlock.spec.ts
-import { test, expect } from '@playwright/test';
-
-test('Concurrent Seat Booking Race Condition Test', async ({ request }) => {
-  const targetSeatId = 'SEAT-VIP-A12';
-  const totalConcurrentUsers = 10;
-  
-  // Tao mang 10 requests dong thoi voi 10 User Tokens khac nhau
-  const requests = Array.from({ length: totalConcurrentUsers }, (_, i) => {
-    return request.post(`/api/v1/seats/${targetSeatId}/hold`, {
-      data: { userId: `user_${i + 1}`, holdDurationSeconds: 60 },
-    });
-  });
-
-  // Ban dong thoi 10 requests vao cung 1 thoi diem qua Promise.all
-  const responses = await Promise.all(requests);
-  const statusCodes = responses.map(res => res.status());
-
-  // Kiem tra bat bien toan hoc:
-  const successCount = statusCodes.filter(code => code === 200 || code === 201).length;
-  const conflictCount = statusCodes.filter(code => code === 409).length;
-
-  expect(successCount).toBe(1); // Dung duy nhat 1 nguoi dat duoc ghe!
-  expect(conflictCount).toBe(totalConcurrentUsers - 1); // 9 nguoi con lai nhan 409 Conflict
-});
-```
-
-### 3. Các Điều Kiện Biên Bắt Buộc Kiểm Tra (Boundary Checks)
-
-1. **Tính nguyên tử của giao dịch (Atomicity):** Số lượng bản ghi `Booking` được tạo ra trong cơ sở dữ liệu phải đúng bằng 1.
-2. **Khôi phục trạng thái sau khi hết hạn Lock (TTL Expiration):** Khi User giữ ghế không thanh toán sau 60 giây, khóa Redis tự động giải phóng và ghế trở lại trạng thái `FREE` cho người khác đặt.
+- **Bản chất:** Đặc tả nhiệm vụ hiện thực bộ kiểm thử tự động API Ca 2: Điều kiện chạy đua (Race Condition) và tranh chấp tài nguyên cao độ trên endpoint `POST /bookings/reserve` của hệ thống `ticket-booking`.
+- **Mục đích:** Sử dụng kỹ thuật Asynchronous Socket Flooding với `Promise.all()` để bắn đồng thời $N = 10$ requests giữ chỗ trên cùng một mã ghế duy nhất (`seatIds: [UUID]`).
+- **Điểm mấu chốt:** Kiểm chứng cơ chế bảo vệ 2 tầng: Khóa phân tán **Redis Redlock** ở tầng RAM và **PostgreSQL Pessimistic Locking** (`SELECT ... FOR UPDATE`) ở tầng Database. Xác thực bất biến toán học: Đúng $1$ request nhận `HTTP 201 Created` và $N-1$ requests nhận `HTTP 409 Conflict`, triệt tiêu $100\%$ lỗi Double-booking.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Bối Cảnh Nghiệp Vụ (Business & Technical Context)
+
+- **Bối cảnh hệ thống `ticket-booking` (NestJS Booking Module):**
+  - **Endpoint Trọng Yếu:** `POST /bookings/reserve`
+    - Headers bắt buộc: `Authorization: Bearer <token>`, `idempotency-key: <UUIDv4>`.
+    - Body (`ReserveSeatsDto`):
+      ```json
+      {
+        "showId": "019fa8bc-8f4d-7000-b366-e691f45cfb8f",
+        "seatIds": ["019fa8bc-8f4d-7000-b366-e691f45cfb8f"],
+        "voucherCode": "DISCOUNT10"
+      }
+      ```
+  - **Cơ Chế Bảo Vệ 2 Tầng Trước Tranh Chấp (Dual-Layer Locking):**
+    1. **Tầng 1 - Khóa Phân Tán Redis Redlock (RAM Layer):**
+       - Khi request đến, `BookingService` sắp xếp danh sách `seatIds` và xin giữ khóa phân tán trên các tài nguyên Redis: `lock:seats:${seatId}` thông qua `RedlockService.acquireLock(resources, 2000)`.
+       - Nếu không xin được khóa (do luồng khác đang giữ), hệ thống ném ngay `ConflictException` (`HTTP 409 Conflict`) với thông báo: *"Ghế đã được giữ hoặc đặt bởi người khác"*, giải phóng tải cho Database.
+    2. **Tầng 2 - Khóa Bi Quan Cơ Sở Dữ Liệu (PostgreSQL Pessimistic Locking):**
+       - Luồng giành được khóa Redis tiến hành mở Transaction trong PostgreSQL, thực hiện câu truy vấn `SELECT ... FROM show_seats WHERE id IN (...) FOR UPDATE`.
+       - Kiểm tra trạng thái ghế phải là `available` (hoặc `status = 'reserved'` nhưng đã quá hạn `lockedUntil < now()`).
+       - Cập nhật trạng thái ghế thành `reserved` với thời hạn giữ chỗ 10 phút (`lockedUntil: now() + 10m`), tạo bản ghi booking với trạng thái `pending_payment`.
+
+---
+
+## 2. Các Yêu Cầu Thiết Kế Ca Kiểm Thử (Test Design Specifications)
+
+Người phụ trách cần thiết kế và hiện thực các kịch bản kiểm thử tự động trong `tests/api/concurrency.spec.ts`:
+
+### `TC-CONCUR-01: High-Contention Simultaneous Seat Booking (10 Concurrent Requests)`
+- **Mục tiêu:** Kiểm tra khả năng chặn đứng hoàn toàn hiện tượng Double-booking khi 10 người dùng cùng bấm đặt một ghế tại cùng thời điểm $t_0$.
+- **Tiền điều kiện:** Chuẩn bị 1 suất chiếu hợp lệ (`showId`) và 1 mã ghế trống (`seatId`). Tạo 10 tài khoản người dùng khác nhau với 10 Access Tokens độc lập.
+- **Thao tác thực hiện:**
+  1. Khởi tạo mảng 10 HTTP requests, mỗi request mang một `idempotency-key` riêng (UUID v4) và Token của một người dùng khác nhau, nhưng cùng trỏ vào mã ghế đích `seatId`.
+  2. Kích hoạt bắn đồng thời 10 requests qua `Promise.all(requestPromises)`.
+- **Kỳ vọng & Bất biến toán học (Mathematical Invariants):**
+  - **Phân bổ mã trạng thái HTTP:**
+    - Số lượng phản hồi `HTTP 201 Created` (Đặt thành công): Đúng bằng **$1$**.
+    - Số lượng phản hồi `HTTP 409 Conflict` (Bị từ chối do tranh chấp): Đúng bằng **$9$**.
+  - **Kiểm định cấu trúc phản hồi:**
+    - Request thành công: Nhận response body `{ success: true, data: { bookingId, status: "pending_payment", totalPrice, expiresAt, seats } }`.
+    - 9 Requests thất bại: Nhận response body chuẩn RFC 9457 với `status: 409`, `title: "Conflict"`, `detail: "Ghế đã được giữ hoặc đặt bởi người khác"`.
+  - **Bất biến cơ sở dữ liệu:** Không có ghế nào bị gán cho 2 người dùng khác nhau (Zero Double-booking).
+
+---
+
+### `TC-CONCUR-02: Lock Expiration & Resource Release (TTL Expiration Recovery)`
+- **Mục tiêu:** Kiểm tra cơ chế tự động giải phóng ghế sau khi hết thời hạn giữ chỗ (10 phút) để người khác có thể đặt lại.
+- **Kỳ vọng:** Khi bản ghi ghế hết hạn `lockedUntil`, request đặt vé tiếp theo đối với ghế này sẽ giành được quyền giữ chỗ thành công với `HTTP 201 Created`.
+
+---
+
+## 3. Câu Hỏi Cốt Lõi Cần Trả Lời & Kịch Bản Thất Bại (Failure Modes)
+
+1. **Tại sao cần kết hợp cả Redis Redlock lẫn PostgreSQL `FOR UPDATE`?** Nếu chỉ dùng Redis Redlock mà Redis bị mất kết nối (Network Partition), tại sao DB Pessimistic Locking là chốt chặn an toàn cuối cùng?
+2. **Tại sao danh sách `seatIds` bắt buộc phải được sắp xếp (`sort()`) trước khi xin khóa Redlock?** (Nguyên lý phòng chống bế tắc Deadlock khi 2 giao dịch xin khóa 2 ghế A và B theo thứ tự ngược nhau).
+3. **Nếu không có cơ chế khóa phân tán, chi phí tài chính và pháp lý của lỗi Double-booking đối với rạp chiếu phim / sự kiện là gì?**
+
+---
+
+## 4. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+1. **Tài Liệu Khóa Phân Tán & Bất Đồng Bộ:**
+   - [Redis Official Documentation - Distributed Locks with Redis (Redlock Algorithm)](https://redis.io/docs/latest/develop/use/dist-locks/)
+   - [PostgreSQL Documentation - Explicit Locking (SELECT ... FOR UPDATE)](https://www.postgresql.org/docs/current/explicit-locking.html)
+   - [MDN Web Docs - Promise.all()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all)
+
+---
+
+## 5. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo (`67_Bao_cao.docx` / `67_Bao_cao.tex` - Mục 3.2.2 Chương 3)
+Người phụ trách soạn thảo theo khung 5 phần học thuật:
+1. **Mục tiêu & Cơ chế kỹ thuật:** Phân tích mô hình Dual-Layer Locking (Redis Redlock + DB `FOR UPDATE`) và nguyên lý Asynchronous Socket Flooding.
+2. **Đặc tả kịch bản & Dữ liệu kiểm thử:** Bảng thông số 10 concurrent requests (User IDs, Tokens, Show ID, Seat ID, Idempotency Keys, Expected Statuses).
+3. **Trích đoạn mã nguồn then chốt:** Trích dẫn 15 - 25 dòng code xử lý mảng `Promise.all()` và logic tính toán kiểm định $1$ Created + $9$ Conflict.
+4. **Bằng chứng thực nghiệm & Phân tích log:** Ảnh chụp terminal chạy pass $100\%$, log danh sách mã trạng thái HTTP nhận về từ 10 sockets đồng thời.
+5. **Đánh giá rủi ro & Bài học kỹ thuật:** Phân tích nguy cơ Deadlock, nghẽn tài nguyên và giải pháp sắp xếp khóa có thứ tự.
+
+---
+
+## 6. Tiêu Chí Nghiệm Thu & Bằng Chứng Bàn Giao (Definition of Done)
 
 - [ ] **Mã Nguồn Kiểm Thử & Chạy Pass ($100\%$):**
-  - [ ] Tạo file `src/api/specs/concurrency_redlock.spec.ts`.
-  - [ ] Chạy lệnh `npx playwright test concurrency_redlock.spec.ts --project=api-tests` pass $100\%$.
-  - [ ] Xác nhận tỷ lệ Double-booking là $0.00\%$ trên tối thiểu 10 requests đồng thời.
+  - [ ] Tạo file `tests/api/concurrency.spec.ts`.
+  - [ ] Chạy lệnh `bunx playwright test tests/api/concurrency.spec.ts --project=api` pass $100\%$.
+  - [ ] Bất biến $1$ Success + $9$ Conflict được xác thực bằng câu lệnh assertion toán học chính xác.
 - [ ] **Bằng Chứng Git & Pull Request:**
   - [ ] Tạo nhánh `feat/wbs-2.2-api-concurrency-redlock`.
-  - [ ] Tạo Pull Request trên GitHub với mô tả chi tiết, phân tích log HTTP status codes và ảnh chụp kết quả test pass.
-  - [ ] Cập nhật link PR vào Google Sheets Master WBS.
-- [ ] **Báo Cáo:**
-  - [ ] Soạn thảo bản thảo Mục 3.2 Chương 3 cho Báo cáo Word (`67_Bao_cao.docx`).
-
-## Related Notes
-
-- [[Asynchronous_Socket_Flooding_and_Race_Condition_Testing]]
-- [[API_Test_Data_Lifecycle_and_State_Isolation]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+  - [ ] Tạo Pull Request trên GitHub với mô tả chi tiết, log status codes và ảnh test pass.
+- [ ] **Chất Lượng Học Thuật Trong Báo Cáo:**
+  - [ ] Hoàn thành đầy đủ 5 phần cho Mục 3.2.2 trong Báo cáo đồ án.

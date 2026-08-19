@@ -1,79 +1,81 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Task specification, historical context, code-first philosophy, core concepts, and Definition of Done for WBS 1.1A
----
-
 # WBS 1.1A: Playwright Overview and Code-First Philosophy
 
 ## Metadata
 
 - **WBS Code:** `1.1A`
-- **Task Name:** Tổng quan Playwright, Lịch sử & Triết lý Code-first
+- **Task Name:** Nghiên cứu Tổng quan Playwright, Lịch sử phát triển & Triết lý Code-First
 - **Assignee:** Lê Minh Quân (MSSV: 0306241143)
 - **Task Weight:** `2.0%`
-- **Deliverable Artifacts:** Mục 1.1 Chương 1 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** Mục 1.1 Chương 1 trong `67_Bao_cao.docx`.
 
 ## TL;DR
 
-Tài liệu đặc tả kỹ thuật chi tiết hướng dẫn thành viên phụ trách biên soạn phần Tổng quan Playwright, nguồn gốc lịch sử phát triển từ đội ngũ phát triển Puppeteer tại Microsoft, triết lý thiết kế Code-first hiện đại cho SDET, và 8 khái niệm kiến trúc cốt lõi định hình năng lực tự động hóa kiểm thử.
-
-## Core Architectural Content to Document
-
-### 1. Lịch Sử Phát Triển & Bối Cảnh Ra Đời
-
-- **Nguồn gốc:** Dự án Playwright được khởi xướng và duy trì bởi Microsoft từ năm 2020, được dẫn dắt bởi chính đội ngũ kỹ sư sáng lập dự án Puppeteer (Google).
-- **Động lực thúc đẩy:** Giải quyết các giới hạn cốt tử của các công cụ kiểm thử thế hệ trước (Selenium HTTP overhead, Cypress single-tab/iframe limitations).
-- **Mô hình cấp phép:** Mã nguồn mở $100\%$ theo giấy phép Apache 2.0, được Microsoft cam kết tài trợ và bảo trợ dài hạn.
-
-### 2. Triết Lý Thiết Kế Code-First Trong Kiểm Thử Phần Mềm
-
-- **Code-First vs Low-Code/Record-Playback:**
-  - Triết lý Code-First coi toàn bộ kịch bản kiểm thử là mã nguồn hạng nhất (First-Class Code), tuân thủ đầy đủ các nguyên lý kỹ nghệ phần mềm (DRY, SOLID, Type Safety).
-  - Khắc phục sự phụ thuộc vào các công cụ GUI đắt đỏ, dễ gãy (brittle) khi giao diện thay đổi.
-  - Tích hợp liền mạch vào hệ thống Git, Code Review và CI/CD Automation.
-- **Hỗ trợ đa ngôn ngữ:** Hỗ trợ chính thức TypeScript, JavaScript, Python, Java, và C# (.NET).
-
-### 3. 8 Khái Niệm Cốt Lõi (Playwright Core Concepts)
-
-```text
-+------------------------------------------------------------------------+
-|                   HE THONG KHAI NIEM COT LOI CUA PLAYWRIGHT            |
-+------------------------------------------------------------------------+
-| 1. Browser Hierarchy    : Browser ---> BrowserContext ---> Page        |
-| 2. Locators             : Role-based, Lazy Evaluation, Strict Mode     |
-| 3. Auto-waiting         : Tu dong kiem tra 5 dieu kien Actionability   |
-| 4. Web-first Assertions : Tu dong Retry cho den khi dat ky vong        |
-| 5. Network Interception : Can thiep & Mock API qua page.route()        |
-| 6. APIRequestContext    : Kiem thu API khong can bat trinh duyet       |
-| 7. Page Object Model    : Tach biet cau truc giao dien va luong test   |
-| 8. Test Fixtures        : Co che Dependency Injection cung cap moi truong|
-+------------------------------------------------------------------------+
-```
-
-1. **Browser Hierarchy (`Browser -> BrowserContext -> Page`):** Phân cấp tiến trình trình duyệt, không gian bộ nhớ cô lập và tab trang.
-2. **Locators (Định vị thế hệ mới):** Định vị dựa trên cây Accessibility Tree (`getByRole`, `getByText`, `getByLabel`), cơ chế Lazy Evaluation không bắt trước DOM, Strict Mode chống bắt nhầm phần tử.
-3. **Auto-waiting:** Cơ chế tự động thăm dò (polling) 5 điều kiện Actionability trước khi thực thi action.
-4. **Web-first Assertions:** Tự động retry liên tục trong khung thời gian timeout quy định.
-5. **Network Interception:** Can thiệp sâu vào tầng mạng qua `page.route()`.
-6. **APIRequestContext:** Thực thi các HTTP request trực tiếp không cần khởi tạo trình duyệt đồ họa.
-7. **Page Object Model & Component Object Model:** Đóng gói phần tử và hành vi giao diện vào các lớp tái sử dụng.
-8. **Test Fixtures:** Quản lý vòng đời và Dependency Injection cho từng bài test.
+- **Bản chất:** Đặc tả nhiệm vụ nghiên cứu cơ sở lý luận, nguồn gốc lịch sử và triết lý thiết kế Code-First của Playwright Test Engine.
+- **Mục đích:** Cung cấp câu hỏi định hướng, tài liệu chính thống để người phụ trách tự tổng hợp nội dung cho Mục 1.1 Báo cáo đồ án.
+- **Điểm mấu chốt:** Nắm vững 8 khái niệm kiến trúc cốt lõi và luận điểm bảo vệ tính ưu việt của Code-First trước hội đồng giảng viên.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Phạm Vi Nghiên Cứu (Research Scope)
 
-- [ ] **Báo cáo Word (`67_Bao_cao.docx`):**
-  - [ ] Soạn thảo đầy đủ Mục 1.1 Chương 1: Giới thiệu Playwright, lịch sử hình thành, triết lý Code-first và 8 khái niệm cốt lõi.
-  - [ ] Đính kèm sơ đồ cây 8 khái niệm cốt lõi.
-- [ ] **Review & Bàn Giao:**
-  - [ ] Nộp bản thảo Word và Slide cho Trưởng nhóm nghiệm thu đúng hạn.
+- **Phạm vi trọng tâm:**
+  - Nguồn gốc hình thành của Playwright (Microsoft) từ nền tảng đội ngũ kỹ sư Puppeteer (Google).
+  - Động lực thúc đẩy ra đời: Khắc phục các "điểm nghẽn cố hữu" của Selenium WebDriver (HTTP latency, flaky tests) và Cypress (In-browser iframe sandbox, cross-origin/multi-tab limitations).
+  - Triết lý Code-First trong kiểm thử tự động (SDET): Tách biệt bản chất giữa Code-First và các công cụ Low-Code / GUI Tools truyền thống.
+  - Hệ thống phân loại 8 khái niệm kiến trúc cốt lõi định hình năng lực Playwright.
+- **Ranh giới ngoài phạm vi (Non-goals):** Không đi sâu vào cấu hình chi tiết code chạy thử nghiệm (đã phân bổ tại WBS 1.3A & 1.6).
 
-## Related Notes
+---
 
-- [[Browser_Automation_IPC_Fundamentals]]
-- [[Chrome_DevTools_Protocol_Mechanics]]
-- [[Playwright_Hard_Technical_Boundaries_and_Non_Goals]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+## 2. Các Câu Hỏi Cốt Lõi Cần Trả Lời (Core Guiding Questions)
+
+Người phụ trách cần nghiên cứu tài liệu chính thống để trả lời các câu hỏi sau:
+
+1. **Về Nguồn Gốc & Động Lực Kỹ Thuật:**
+   - Tại sao Microsoft lại đầu tư xây dựng Playwright vào năm 2020 khi thị trường đã có Selenium và Cypress thống trị?
+   - Đội ngũ kỹ sư sáng lập Puppeteer đã mang những bài học kinh nghiệm gì từ Chrome DevTools sang Playwright để hỗ trợ đa engine (Chromium, WebKit, Firefox)?
+2. **Về Triết Lý Code-First:**
+   - Tại sao trong môi trường doanh nghiệp hiện đại, kịch bản kiểm thử bắt buộc phải là "Mã nguồn hạng nhất" (First-Class Code) thay vì file cấu hình XML/GUI của các công cụ Low-Code?
+   - Tính năng `codegen` (Record & Playback) trong Playwright đóng vai trò là "Công cụ sinh mã gợi ý (Scaffolding)" hay là giải pháp thay thế hoàn toàn việc viết code?
+3. **Về 8 Khái Niệm Kiến Trúc Cốt Lõi:**
+   - Nêu rõ định nghĩa và vai trò của 8 khái niệm: `Browser Hierarchy`, `Locators`, `Auto-waiting`, `Web-first Assertions`, `Network Interception`, `APIRequestContext`, `POM & COM Architecture`, và `Test Fixtures`.
+   - Tại sao kiến trúc kiểm thử hiện đại cần kết hợp cả Page Object Model (POM) và Component Object Model (COM)?
+4. **Về Ranh Giới Kỹ Thuật Cứng (Non-goals):**
+   - Những loại bài toán nào Playwright chủ đích không hỗ trợ (ví dụ: Performance Load Testing quy mô lớn, bypass Captcha/Cloudflare, tự động hóa ứng dụng Desktop ngoài trình duyệt)?
+
+---
+
+## 3. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+Người phụ trách bắt buộc phải đọc và trích dẫn từ các nguồn chính thống sau:
+
+1. **Microsoft Playwright Official Docs:**
+   - [Why Playwright? (Philosophy & Architecture Overview)](https://playwright.dev/docs/why-playwright)
+   - [Getting Started & Core Concepts Guide](https://playwright.dev/docs/intro)
+   - [Playwright Trace Viewer & Architecture Deep Dive](https://playwright.dev/docs/trace-viewer-intro)
+2. **Repository Mã Nguồn Chính Thức:**
+   - [Microsoft Playwright GitHub Repository (Architecture & Issues)](https://github.com/microsoft/playwright)
+3. **Hệ Thống Tiêu Chuẩn & Bài Báo Kỹ Thuật:**
+   - [W3C Web Accessibility Initiative (WAI-ARIA Core Concepts)](https://www.w3.org/WAI/ARIA/apg/)
+
+---
+
+## 4. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo Word (`67_Bao_cao.docx` - Mục 1.1 Chương 1)
+- **1.1.1. Lịch sử phát triển & Bối cảnh ra đời:** Nêu rõ mốc thời gian 2020, giấy phép Apache 2.0, vai trò bảo trợ của Microsoft.
+- **1.1.2. Triết lý thiết kế Code-First:** Bảng so sánh hoặc luận điểm đối chiếu giữa Code-First và Low-Code/GUI Tools (tính bảo trì, Git workflow, CI/CD).
+- **1.1.3. Hệ thống 8 khái niệm cốt lõi:**
+  - Tự vẽ sơ đồ khối phân loại 8 khái niệm.
+  - Phân tích ngắn gọn bản chất kỹ thuật của từng khái niệm (tối đa 3 - 4 dòng mỗi mục).
+- **1.1.4. Ranh giới kỹ thuật & Non-goals:** Liệt kê các giới hạn thiết kế của Playwright.
+
+---
+
+## 5. Tiêu Chí Đánh Giá & Nghiệm Thu (Evaluation Rubric & DoD)
+
+- [ ] **Khả Năng Phản Biện:** Trả lời trôi chảy 4 nhóm câu hỏi cốt lõi khi Leader hoặc Giảng viên chất vấn.
+- [ ] **Chất Lượng Học Thuật:**
+  - [ ] Tuyệt đối không sao chép nguyên văn bản dịch máy; thuật ngữ kỹ thuật tiếng Anh giữ nguyên inline.
+  - [ ] Sơ đồ cây 8 khái niệm được thiết kế mạch lạc, không dùng ảnh chụp mờ từ web.
+  - [ ] Có trích dẫn tối thiểu 2 tài liệu tham khảo chính thống chuẩn IEEE.

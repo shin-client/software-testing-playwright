@@ -1,79 +1,76 @@
----
-tags: [type/method, topic/project-management, layer/quality]
-status: permanent
-date: 2026-08-18
-description: Deep architectural breakdown of BrowserContext isolation, memory footprint optimization, storageState caching, and Definition of Done for WBS 1.2B
----
-
 # WBS 1.2B: Browser Context Isolation and Memory Optimization
 
 ## Metadata
 
 - **WBS Code:** `1.2B`
-- **Task Name:** Cơ chế Browser Context Isolation & Tối ưu hóa Bộ nhớ RAM
+- **Task Name:** Nghiên cứu Cơ chế Browser Context Isolation & Tối ưu hóa Bộ nhớ RAM
 - **Assignee:** Nguyễn Quốc Đương (MSSV: 0306241102)
 - **Task Weight:** `2.5%`
-- **Deliverable Artifacts:** Mục 1.4 Chương 1 trong `67_Bao_cao.docx` và các Slide tương ứng trong `67_Slide.pptx`.
+- **Deliverable Artifacts:** Mục 1.4 Chương 1 trong `67_Bao_cao.docx`.
 
 ## TL;DR
 
-Tài liệu đặc tả kiến trúc bộ nhớ và cơ chế cô lập ngữ cảnh trình duyệt (Browser Context Isolation) của Playwright. Phân tích nguyên lý tạo môi trường ảo hóa trong RAM tương đương cửa sổ ẩn danh (Incognito), cho phép chạy song song hàng trăm ca kiểm thử độc lập mà không cần khởi động lại tiến trình trình duyệt vật lý, giúp tiết kiệm $90\%$ dung lượng RAM và rút ngắn thời gian thực thi.
-
-## Core Architectural Content to Document
-
-### 1. Phân Tầng Tiến Trình: Browser Process vs BrowserContext
-
-```text
-+----------------------------------------------------------------------------------------------------+
-|                                      BROWSER PROCESS (OS Level)                                    |
-|   (Khoi dong 1 lan duy nhat: ~1500ms, tieu ton ~150MB RAM, quan ly Renderer & Network Service)     |
-+----------------------------------------------------------------------------------------------------+
-       |                                      |                                      |
-       v                                      v                                      v
-+-----------------------------+ +-----------------------------+ +-----------------------------+
-|    BrowserContext 1 (RAM)   | |    BrowserContext 2 (RAM)   | |    BrowserContext 3 (RAM)   |
-| (Khoi tao: ~5ms, ~1MB RAM)  | | (Khoi tao: ~5ms, ~1MB RAM)  | | (Khoi tao: ~5ms, ~1MB RAM)  |
-| - Cookies (User A)          | | - Cookies (User B)          | | - Cookies (Admin)           |
-| - LocalStorage / Session    | | - LocalStorage / Session    | | - LocalStorage / Session    |
-| - IndexedDB / Cache         | | - IndexedDB / Cache         | | - IndexedDB / Cache         |
-+-----------------------------+ +-----------------------------+ +-----------------------------+
-```
-
-- **Browser Process (Tiến trình hệ điều hành):** Là tiến trình nhị phân của trình duyệt (Chromium, Firefox, WebKit). Quá trình khởi động tiến trình này rất nặng nề về CPU và bộ nhớ RAM.
-- **BrowserContext (Không gian ngữ cảnh trong RAM):** Là một phiên làm việc cô lập hoàn toàn bên trong bộ nhớ của Browser Process hiện hữu.
-  - Thời gian khởi tạo một BrowserContext mới chỉ mất khoảng $2\text{ms} - 10\text{ms}$.
-  - Dung lượng RAM tiêu tốn cho mỗi context chỉ khoảng vài Megabytes.
-
-### 2. Cơ Chế Cô Lập Trạng Thái Tuyệt Đối (State Isolation)
-
-Mỗi `BrowserContext` sở hữu không gian lưu trữ dữ liệu hoàn toàn độc lập:
-1. **Cookies:** Cookie của phiên làm việc trong Context 1 không thể nhìn thấy hoặc ghi đè từ Context 2.
-2. **Web Storage:** `localStorage` và `sessionStorage` được khởi tạo mới hoàn toàn trống rỗng cho mỗi context.
-3. **IndexedDB & Service Workers:** Được đóng gói riêng biệt, ngăn ngừa xung đột dữ liệu cache giữa các bài test.
-4. **Quyền hạn (Permissions) & Định vị địa lý (Geolocation):** Có thể cấp quyền cho từng context riêng lẻ (ví dụ: Context 1 giả lập ở Tokyo, Context 2 giả lập ở New York).
-
-### 3. Cơ Chế Quản Lý Phiên Xác Thực Nhanh (`storageState`)
-
-- **Vấn đề:** Đăng nhập qua giao diện người dùng (nhập username, password, click login, chờ OTP) trong từng bài test làm tăng thời gian thực thi lên nhiều lần.
-- **Giải pháp:**
-  - Thực hiện đăng nhập một lần duy nhất trong giai đoạn Setup (hoặc qua API).
-  - Xuất toàn bộ Cookies và LocalStorage ra file `storageState.json`.
-  - Khởi tạo các `BrowserContext` tiếp theo với tùy chọn `storageState: 'auth.json'`, giúp trang web ở trạng thái đã đăng nhập sẵn ngay khi mở trình duyệt mà không cần chạy lại các bước đăng nhập.
+- **Bản chất:** Đặc tả nhiệm vụ nghiên cứu kiến trúc phân tầng bộ nhớ và cơ chế cô lập ngữ cảnh trình duyệt (Browser Context Isolation) của Playwright.
+- **Mục đích:** Cung cấp câu hỏi định hướng và tài liệu chính thống để người phụ trách chứng minh khả năng chạy song song hàng trăm test độc lập trên 1 Browser Process duy nhất.
+- **Điểm mấu chốt:** Nắm vững cơ chế ảo hóa Incognito trong RAM, khả năng tiết kiệm $90\%$ bộ nhớ và kỹ thuật tái sử dụng phiên xác thực qua `storageState`.
 
 ---
 
-## Acceptance Criteria & Definition of Done (DoD Checklist)
+## 1. Mục Tiêu & Phạm Vi Nghiên Cứu (Research Scope)
 
-- [ ] **Báo cáo Word (`67_Bao_cao.docx`):**
-  - [ ] Soạn thảo đầy đủ Mục 1.4 Chương 1: Phân tích kiến trúc BrowserContext, cơ chế cô lập bộ nhớ và kỹ thuật `storageState`.
-  - [ ] Đính kèm sơ đồ cây phân cấp bộ nhớ Browser -> BrowserContext -> Page.
-  - [ ] Bảng so sánh tài nguyên giữa việc tạo Browser mới và tạo BrowserContext mới.
-- [ ] **Review & Bàn Giao:**
-  - [ ] Nộp bản thảo Word và Slide cho Trưởng nhóm nghiệm thu đúng hạn.
+- **Phạm vi trọng tâm:**
+  - Phân tầng tiến trình hệ điều hành: Sự khác biệt giữa `Browser Process` (Tiến trình OS nặng), `BrowserContext` (Ngữ cảnh cô lập trong RAM), và `Page` (Tab giao diện).
+  - Cơ chế cô lập trạng thái tuyệt đối (Zero State Leakage): Cookies, Web Storage (`localStorage`, `sessionStorage`), IndexedDB, Permissions, Geolocation.
+  - Hiệu quả tài nguyên định lượng: Chi phí khởi động và dung lượng RAM giữa việc mở Browser mới vs tạo Context mới.
+  - Kỹ thuật tối ưu hóa thời gian chạy E2E: Quản lý phiên xác thực nhanh qua `storageState.json` (Authentication Reuse).
+- **Ranh giới ngoài phạm vi (Non-goals):** Không cấu hình file fixture code thực nghiệm (đã phân bổ tại WBS 2.1).
 
-## Related Notes
+---
 
-- [[Browser_Context_Isolation]]
-- [[Hybrid_Auth_and_Storage_State_Injection]]
-- [[API_Test_Data_Lifecycle_and_State_Isolation]]
-- [[Team_Work_Breakdown_and_Contribution_Matrix_Template]]
+## 2. Các Câu Hỏi Cốt Lõi Cần Trả Lời (Core Guiding Questions)
+
+Người phụ trách cần nghiên cứu tài liệu chính thống để trả lời các câu hỏi sau:
+
+1. **Về Phân Tầng Tiến Trình Trình Duyệt:**
+   - Tại sao việc khởi động một tiến trình trình duyệt Chromium mới (`Browser Process`) lại tốn nhiều thời gian ($~1500\text{ms}$) và ngốn nhiều tài nguyên RAM ($~150\text{MB}$)?
+   - `BrowserContext` trong Playwright hoạt động như thế nào? Tại sao nó có thể khởi tạo mới chỉ trong $2\text{ms} - 10\text{ms}$ và tiêu tốn chỉ vài Megabytes RAM?
+2. **Về Cơ Chế Cô Lập Trạng Thái (State Isolation):**
+   - Làm thế nào Playwright đảm bảo rằng Cookie, Token đăng nhập hoặc dữ liệu lưu trong `localStorage` của Bài test A không bị rò rỉ (leak) sang Bài test B?
+   - Tại sao cơ chế này cho phép Playwright chạy song song (Parallel Execution) nhiều workers độc lập mà không bao giờ bị xung đột dữ liệu phiên?
+3. **Về Kỹ Thuật Tối Ưu Hóa Phiên Xác Thực (`storageState`):**
+   - Vấn đề nghẽn thời gian: Nếu 50 bài test E2E đều phải tự điền form đăng nhập trên UI ($3\text{s} - 5\text{s}$ mỗi bài), tổng thời gian lãng phí là bao nhiêu?
+   - Cơ chế `storageState` trích xuất trạng thái Cookies/LocalStorage sau khi đăng nhập 1 lần (qua API hoặc UI setup) và nạp trực tiếp vào RAM của các `BrowserContext` tiếp theo như thế nào?
+
+---
+
+## 3. Tài Liệu Nghiên Cứu Bắt Buộc (Primary Official Sources)
+
+Người phụ trách bắt buộc phải đọc và trích dẫn từ các nguồn chuẩn sau:
+
+1. **Tài Liệu Chính Thống Playwright:**
+   - [Playwright BrowserContext API Documentation](https://playwright.dev/docs/api/class-browsercontext)
+   - [Playwright Isolation Architecture & Browser Contexts](https://playwright.dev/docs/browser-contexts)
+   - [Playwright Authentication & Storage State Strategy](https://playwright.dev/docs/auth)
+2. **Kiến Trúc Nhân Trình Duyệt:**
+   - [Chromium Multi-process Architecture (The Chromium Projects)](https://www.chromium.org/developers/design-documents/multi-process-architecture/)
+
+---
+
+## 4. Cấu Trúc Báo Cáo & Yêu Cầu Đầu Ra (Required Deliverables)
+
+### Báo Cáo Word (`67_Bao_cao.docx` - Mục 1.4 Chương 1)
+- **1.4.1. Phân tầng kiến trúc Browser -> BrowserContext -> Page:**
+  - Phân tích sự khác biệt giữa tiến trình OS và không gian bộ nhớ RAM.
+  - Tự vẽ 01 sơ đồ cây phân cấp kiến trúc 3 tầng.
+- **1.4.2. Cơ chế cô lập trạng thái đa người dùng:** Giải thích chi tiết sự cô lập của Cookies, LocalStorage, IndexedDB và Cache.
+- **1.4.3. Kỹ thuật tái sử dụng phiên xác thực (`storageState`):** Sơ đồ luồng lưu và nạp `storageState.json` để tăng tốc toàn bộ test suite.
+- **1.4.4. Bảng so sánh tài nguyên:** Bảng đối soát RAM, CPU và thời gian khởi tạo giữa Browser-level isolation (Selenium) và Context-level isolation (Playwright).
+
+---
+
+## 5. Tiêu Chí Đánh Giá & Nghiệm Thu (Evaluation Rubric & DoD)
+
+- [ ] **Khả Năng Phản Biện:** Giải thích rõ ràng bản chất kỹ thuật của `BrowserContext` và cơ chế hoạt động của `storageState` trước câu hỏi phản biện.
+- [ ] **Chất Lượng Học Thuật:**
+  - [ ] Sơ đồ cây phân cấp bộ nhớ tự vẽ rõ ràng, trực quan.
+  - [ ] Bảng so sánh tài nguyên có số liệu định lượng cụ thể.
