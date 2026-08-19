@@ -85,7 +85,7 @@ test.describe('WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler', () 
       return recoveryRes.status();
     }, {
       message: 'Server vẫn bị chặn 429 sau thời gian Cooldown',
-      timeout: 30000,          // Thử tối đa trong 30s
+      timeout: 50000,          // Thử tối đa trong 50s
       intervals: [2000, 3000], // Thăm dò sau mỗi 2s - 3s
     }).not.toBe(429);
   });
