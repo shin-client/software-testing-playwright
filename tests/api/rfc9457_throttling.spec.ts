@@ -75,6 +75,7 @@ test.describe('WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler', () 
       });
       if (res.status() === 429) break;
     }
+    expect(res!.status()).toBe(429);
 
     // 2. Thăm dò liên tục (Polling) cho đến khi Server hết cấm (Không còn bị 429)
     await expect.poll(async () => {
