@@ -43,7 +43,7 @@ test.describe("WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler", () 
     let lastResponse;
 
     // Bắn liên tiếp các request sai thông tin để kích hoạt Throttler Guard
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       lastResponse = await request.post("/auth/login", {
         data: {
           email: "brute_force_test@example.com",
@@ -79,7 +79,7 @@ test.describe("WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler", () 
 
     // 1. Bắn request để ép rơi vào trạng thái 429
     let res;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       res = await request.post("/auth/login", {
         data: {
           email: "cooldown_test@example.com",
