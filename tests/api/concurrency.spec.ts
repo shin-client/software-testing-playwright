@@ -37,12 +37,11 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
     concurrencyAuthRequests,
   }) => {
     const targetShowId = "019fa8bc-8f4d-7000-b366-e691f45cfb8f";
-    // Chọn ngẫu nhiên 1 ghế trong pool (A1 -> A8) để đảm bảo các lần chạy liên tiếp không bị đụng ghế cũ
-    const randomIndex = Math.floor(Math.random() * 8);
-    const targetSeatId = SEAT_POOL[randomIndex];
-    // Su dung 4 clients dong thoi de tong toan bo suite (4 + 2 = 6) luon nam duoi han muc 10 req/phut cua /bookings/reserve
     const activeClients = concurrencyAuthRequests.slice(0, 4);
 
+    // Chọn ngẫu nhiên 1 ghế trong phân vùng A1 -> A5 cho ca kiểm thử tranh chấp đồng thời
+    const randomIndex = Math.floor(Math.random() * 5);
+    const targetSeatId = SEAT_POOL[randomIndex];
     // Gửi đồng thời N requests cùng tranh chấp 1 ghế duy nhất
     const requestPromises = activeClients.map((authCtx) => {
       return authCtx.post("/bookings/reserve", {
@@ -55,10 +54,8 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
         },
       });
     });
-    const responses = await Promise.all(requestPromises);
-    console.log("TC-01 Status Codes:", responses.map((r) => r.status()));
 
-    // Assert Invariant: Đúng 1 Thành công (201), N-1 Thất bại (409)
+    const responses = await Promise.all(requestPromises);
     const createdResponses = responses.filter((r) => r.status() === 201);
     const conflictResponses = responses.filter((r) => r.status() === 409);
 
@@ -84,10 +81,10 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
   }) => {
     const user1Ctx = concurrencyAuthRequests[0];
     const user2Ctx = concurrencyAuthRequests[1];
-
     const targetShowId = "019fa8bc-8f4d-7000-b366-e691f45cfb8f";
-    // Sử dụng ghế A9 hoặc A10 cho test case TTL
-    const ttlSeatIndex = 8 + Math.floor(Math.random() * 2);
+
+    // Chọn ngẫu nhiên 1 ghế trong phân vùng A6 -> A10 cho ca kiểm thử TTL Expiration
+    const ttlSeatIndex = 5 + Math.floor(Math.random() * 5);
     const targetSeatId = SEAT_POOL[ttlSeatIndex];
 
     // 1. User 1 tiến hành giữ chỗ
@@ -115,7 +112,7 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
     expect(expiresAt).toBeGreaterThan(now);
     expect(expiresAt - now).toBeLessThanOrEqual(tenMinutesInMs + 30000);
 
-    // 3. User 2 cố tình đặt lại ghế A2 khi đang trong thời hạn khóa -> Phải nhận 409 Conflict
+    // 3. User 2 cố tình đặt lại cùng ghế khi đang trong thời hạn khóa -> Phải nhận 409 Conflict
     const reserveRes2 = await user2Ctx.post("/bookings/reserve", {
       headers: {
         "idempotency-key": crypto.randomUUID(),

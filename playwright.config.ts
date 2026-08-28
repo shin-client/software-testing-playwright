@@ -23,12 +23,11 @@ export default defineConfig({
   expect: {
     timeout: 5 * 1000,
   },
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
-  workers: isCI ? 2 : undefined,
+  retries: isCI ? 1 : 0,
+  workers: 1,
   reporter: [
-    ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],
     ["json", { outputFile: "test-results/results.json" }],
     ["junit", { outputFile: "test-results/junit.xml" }],
@@ -44,6 +43,7 @@ export default defineConfig({
     {
       name: "api",
       testMatch: /.*tests\/api\/.*\.spec\.ts/,
+      fullyParallel: false,
       retries: 0,
       use: {
         baseURL: API_BASE_URL,
