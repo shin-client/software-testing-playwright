@@ -155,8 +155,7 @@ export const test = base.extend<ApiFixtures>({
 
   concurrencyAuthRequests: async ({ playwright, baseURL }, use) => {
     const requestContext = await playwright.request.newContext({ baseURL });
-    const tokens = await getTokensPool(requestContext, 10);
-
+    const tokens = await getTokensPool(requestContext, 4);
     const authContexts = await Promise.all(
       tokens.map(async (token) => {
         return await playwright.request.newContext({
