@@ -40,9 +40,11 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
     // Chọn ngẫu nhiên 1 ghế trong pool (A1 -> A8) để đảm bảo các lần chạy liên tiếp không bị đụng ghế cũ
     const randomIndex = Math.floor(Math.random() * 8);
     const targetSeatId = SEAT_POOL[randomIndex];
+    // Su dung 4 clients dong thoi de tong toan bo suite (4 + 2 = 6) luon nam duoi han muc 10 req/phut cua /bookings/reserve
+    const activeClients = concurrencyAuthRequests.slice(0, 4);
 
     // Gửi đồng thời N requests cùng tranh chấp 1 ghế duy nhất
-    const requestPromises = concurrencyAuthRequests.map((authCtx) => {
+    const requestPromises = activeClients.map((authCtx) => {
       return authCtx.post("/bookings/reserve", {
         headers: {
           "idempotency-key": crypto.randomUUID(),
@@ -53,16 +55,16 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
         },
       });
     });
-
     const responses = await Promise.all(requestPromises);
+    console.log("TC-01 Status Codes:", responses.map((r) => r.status()));
 
     // Assert Invariant: Đúng 1 Thành công (201), N-1 Thất bại (409)
     const createdResponses = responses.filter((r) => r.status() === 201);
     const conflictResponses = responses.filter((r) => r.status() === 409);
 
-    // Assert bất biến toán học: Đúng 1 thành công (201), 3 thất bại do tranh chấp (409)
+    // Assert bất biến toán học: Đúng 1 thành công (201), N-1 thất bại do tranh chấp (409)
     expect(createdResponses).toHaveLength(1);
-    expect(conflictResponses).toHaveLength(concurrencyAuthRequests.length - 1);
+    expect(conflictResponses).toHaveLength(activeClients.length - 1);
 
     // Verify cấu trúc response 201
     const successBody = await createdResponses[0].json();

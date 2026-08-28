@@ -1,5 +1,7 @@
 import type { APIRequestContext } from "@playwright/test";
 import { test as base } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
 
 type ApiFixtures = {
   authRequest: APIRequestContext;
@@ -8,7 +10,6 @@ type ApiFixtures = {
 
 // Module-level Token Cache để tránh spam request login gây dính Auth Throttler (429)
 let singleUserTokenCache: string | null = null;
-const concurrencyTokensCache: string[] = [];
 
 async function loginUser(
   requestContext: APIRequestContext,
@@ -25,7 +26,6 @@ async function loginUser(
       return body.data.accessToken;
     }
     if (res.status() === 429 && attempt < maxRetries) {
-      // Chờ cooldown ngắn nếu bị rate limited do test khác chạy trước đó
       const { promise, resolve } = Promise.withResolvers<void>();
       setTimeout(resolve, 4000 * attempt);
       await promise;
@@ -63,22 +63,38 @@ export const test = base.extend<ApiFixtures>({
   },
 
   concurrencyAuthRequests: async ({ playwright, baseURL }, use) => {
-    const requestContext = await playwright.request.newContext({ baseURL });
-    const NUM_USERS = 4;
+    const NUM_USERS = 10;
+    let tokens: string[] = [];
 
-    // Nếu chưa có token cache, thực hiện login 1 lần duy nhất với retry backoff
-    if (concurrencyTokensCache.length < NUM_USERS) {
-      for (let i = 0; i < NUM_USERS; i++) {
+    // Đọc 10 tokens từ fixtures/auth-tokens.json
+    try {
+      const tokensFilePath = path.resolve(
+        process.cwd(),
+        "fixtures/auth-tokens.json",
+      );
+      if (fs.existsSync(tokensFilePath)) {
+        const tokensData = JSON.parse(fs.readFileSync(tokensFilePath, "utf-8"));
+        tokens = tokensData.map((t: { accessToken: string }) => t.accessToken);
+      }
+    } catch {
+      tokens = [];
+    }
+
+    // Fallback nếu chưa có file: Thực hiện login qua network
+    if (tokens.length < NUM_USERS) {
+      const requestContext = await playwright.request.newContext({ baseURL });
+      for (let i = tokens.length; i < NUM_USERS; i++) {
         const email = `user${i + 1}@test.com`;
         const password = "Password123!";
         const token = await loginUser(requestContext, email, password);
-        concurrencyTokensCache[i] = token;
+        tokens[i] = token;
       }
+      await requestContext.dispose();
     }
 
-    // Tạo các context độc lập với token đã được cache
+    // Tạo 10 contexts độc lập với 10 tokens
     const authContexts = await Promise.all(
-      concurrencyTokensCache.map(async (token) => {
+      tokens.map(async (token) => {
         return await playwright.request.newContext({
           baseURL,
           extraHTTPHeaders: {
@@ -92,7 +108,6 @@ export const test = base.extend<ApiFixtures>({
     await use(authContexts);
 
     await Promise.all(authContexts.map((ctx) => ctx.dispose()));
-    await requestContext.dispose();
   },
 });
 
