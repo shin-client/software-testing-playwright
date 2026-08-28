@@ -11,6 +11,21 @@ import crypto from "node:crypto";
  *  2. Fast Fail-Early: Exactly N - 1 users are rejected by Redis Redlock (HTTP 409 Conflict).
  *  3. RFC 9457 Compliance: All 409 error responses strictly adhere to the Problem Details schema.
  */
+
+// Danh sách 10 ghế đã được seed trong DB (A1 -> A10)
+const SEAT_POOL = [
+  "019fa8bc-8f4d-7000-b366-e691f45cfb51", // A1
+  "019fa8bc-8f4d-7000-b366-e691f45cfb52", // A2
+  "019fa8bc-8f4d-7000-b366-e691f45cfb53", // A3
+  "019fa8bc-8f4d-7000-b366-e691f45cfb54", // A4
+  "019fa8bc-8f4d-7000-b366-e691f45cfb55", // A5
+  "019fa8bc-8f4d-7000-b366-e691f45cfb56", // A6
+  "019fa8bc-8f4d-7000-b366-e691f45cfb57", // A7
+  "019fa8bc-8f4d-7000-b366-e691f45cfb58", // A8
+  "019fa8bc-8f4d-7000-b366-e691f45cfb59", // A9
+  "019fa8bc-8f4d-7000-b366-e691f45cfb5a", // A10
+];
+
 test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () => {
   // Cấu hình serial execution, tắt retry để tránh đốt rate limit, và tăng timeout
   test.describe.configure({
@@ -19,30 +34,18 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
     timeout: 60000,
   });
 
-  // Danh sách 10 ghế đã được seed trong DB (A1 -> A10)
-  const SEAT_POOL = [
-    "019fa8bc-8f4d-7000-b366-e691f45cfb51", // A1
-    "019fa8bc-8f4d-7000-b366-e691f45cfb52", // A2
-    "019fa8bc-8f4d-7000-b366-e691f45cfb53", // A3
-    "019fa8bc-8f4d-7000-b366-e691f45cfb54", // A4
-    "019fa8bc-8f4d-7000-b366-e691f45cfb55", // A5
-    "019fa8bc-8f4d-7000-b366-e691f45cfb56", // A6
-    "019fa8bc-8f4d-7000-b366-e691f45cfb57", // A7
-    "019fa8bc-8f4d-7000-b366-e691f45cfb58", // A8
-    "019fa8bc-8f4d-7000-b366-e691f45cfb59", // A9
-    "019fa8bc-8f4d-7000-b366-e691f45cfb5a", // A10
-  ];
-
   test("TC-CONCUR-01: High-Contention Simultaneous Seat Booking (Concurrent Race Condition)", async ({
     concurrencyAuthRequests,
   }) => {
     const targetShowId = "019fa8bc-8f4d-7000-b366-e691f45cfb8f";
+    // Sử dụng 4 clients đồng thời (4 requests <= 10 limit của /bookings/reserve)
     const activeClients = concurrencyAuthRequests.slice(0, 4);
 
     // Chọn ngẫu nhiên 1 ghế trong phân vùng A1 -> A5 cho ca kiểm thử tranh chấp đồng thời
     const randomIndex = Math.floor(Math.random() * 5);
     const targetSeatId = SEAT_POOL[randomIndex];
-    // Gửi đồng thời N requests cùng tranh chấp 1 ghế duy nhất
+
+    // Gửi đồng thời N requests cùng tranh chấp 1 ghế duy nhất tại thời điểm t0
     const requestPromises = activeClients.map((authCtx) => {
       return authCtx.post("/bookings/reserve", {
         headers: {
@@ -54,12 +57,10 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
         },
       });
     });
-
     const responses = await Promise.all(requestPromises);
+    console.log("TC-01 Statuses:", responses.map((r) => r.status()));
     const createdResponses = responses.filter((r) => r.status() === 201);
     const conflictResponses = responses.filter((r) => r.status() === 409);
-
-    // Assert bất biến toán học: Đúng 1 thành công (201), N-1 thất bại do tranh chấp (409)
     expect(createdResponses).toHaveLength(1);
     expect(conflictResponses).toHaveLength(activeClients.length - 1);
 
