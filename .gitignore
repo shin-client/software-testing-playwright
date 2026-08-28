@@ -10,3 +10,5 @@ node_modules/
 *.tsbuildinfo
 .claude/
 .claude
+AGENTS.md
+docs/
