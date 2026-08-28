@@ -11,5 +11,13 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["tests/**/*", "fixtures/**/*", "utils/**/*", "playwright.config.ts", "eslint.config.ts", "schemas/**/*"]
+  "include": [
+    "pages/**/*",
+    "tests/**/*",
+    "fixtures/**/*",
+    "utils/**/*",
+    "playwright.config.ts",
+    "eslint.config.ts",
+    "schemas/**/*"
+  ]
 }

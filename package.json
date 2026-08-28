@@ -16,7 +16,7 @@
     "test:ci": "playwright test --reporter=list,html,json,junit",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --fix --cache",
-    "check": "tsc --noEmit && eslint . --cache",
+    "check": "tsc --noEmit && eslint . --fix --cache",
     "report": "playwright show-report",
     "codegen": "playwright codegen https://www.saucedemo.com"
   },
