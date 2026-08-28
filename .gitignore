@@ -8,6 +8,5 @@ node_modules/
 *.log
 .eslintcache
 *.tsbuildinfo
-claude
-AGENTS.md
-docs
+.claude/
+.claude
