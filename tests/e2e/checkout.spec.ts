@@ -85,10 +85,7 @@ test.describe('WBS 3.1: Web UI Test Suite - E2E Checkout Flow', () => {
 
     // 3. Verify Cart Badge and Button State persistent
     expect(await inventoryPage.header.getCartCount()).toBe(1);
-    const backpackButton = page
-      .locator('[data-test="inventory-item"]')
-      .filter({ hasText: 'Sauce Labs Backpack' })
-      .getByRole('button');
+    await expect(inventoryPage.getItemButton('Sauce Labs Backpack')).toHaveText('Remove');
     await expect(backpackButton).toHaveText('Remove');
   });
 });
