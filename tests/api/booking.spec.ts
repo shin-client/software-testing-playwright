@@ -76,10 +76,42 @@ async function createPendingReservation(
   throw new Error("Không tìm thấy ghế trống nào khả dụng để tạo booking!");
 }
 
+async function sendConfirmWith429Retry(
+  authRequest: APIRequestContext,
+  idempotencyKey: string | undefined,
+  payload: Record<string, unknown>,
+  maxAttempts = 3,
+): Promise<APIResponse> {
+  const headers: Record<string, string> = {};
+  if (idempotencyKey) {
+    headers["idempotency-key"] = idempotencyKey;
+  }
+
+  let res = await authRequest.post("/bookings/confirm", {
+    headers,
+    data: payload,
+  });
+
+  for (let i = 1; i < maxAttempts && res.status() === 429; i++) {
+    const retryAfter = res.headers()["retry-after"];
+    const waitMs = (parseInt(retryAfter || "15", 10) + 2) * 1000;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(waitMs, 30000)),
+    );
+
+    res = await authRequest.post("/bookings/confirm", {
+      headers,
+      data: payload,
+    });
+  }
+
+  return res;
+}
+
 test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", () => {
   test.describe.configure({
     mode: "serial",
-    timeout: 60000,
+    timeout: 120000,
   });
 
   let sharedBookingId = "";
@@ -103,18 +135,17 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     sharedIdempotencyKey = crypto.randomUUID();
 
     // 2. Gửi request xác nhận thanh toán lần đầu
-    const confirmRes = await authRequest.post("/bookings/confirm", {
-      headers: {
-        "idempotency-key": sharedIdempotencyKey,
-      },
-      data: {
+    const confirmRes = await sendConfirmWith429Retry(
+      authRequest,
+      sharedIdempotencyKey,
+      {
         bookingId: sharedBookingId,
         orderCode: Math.floor(100000 + Math.random() * 900000),
         paymentMethod: "PAYOS",
         transactionId: `PAYOS-TX-${Date.now()}`,
         amount: sharedTotalPrice,
       },
-    });
+    );
 
     expect(confirmRes.status()).toBe(200);
     const body = await confirmRes.json();
@@ -134,18 +165,17 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     expect(sharedIdempotencyKey).not.toBe("");
 
     // Gửi lại CHÍNH XÁC request xác nhận với cùng Idempotency Key
-    const retryRes = await authRequest.post("/bookings/confirm", {
-      headers: {
-        "idempotency-key": sharedIdempotencyKey,
-      },
-      data: {
+    const retryRes = await sendConfirmWith429Retry(
+      authRequest,
+      sharedIdempotencyKey,
+      {
         bookingId: sharedBookingId,
         orderCode: 123456,
         paymentMethod: "PAYOS",
         transactionId: `PAYOS-TX-RETRY`,
         amount: sharedTotalPrice,
       },
-    });
+    );
 
     expect(retryRes.status()).toBe(200);
     const retryBody = await retryRes.json();
@@ -164,17 +194,14 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     authRequest,
   }) => {
     // Cố tình gửi request xác nhận không kèm header 'idempotency-key'
-    const invalidRes = await authRequest.post("/bookings/confirm", {
-      data: {
-        bookingId: crypto.randomUUID(),
-        orderCode: 999999,
-        paymentMethod: "PAYOS",
-        transactionId: "PAYOS-MISSING-HEADER",
-        amount: 100000,
-      },
+    const invalidRes = await sendConfirmWith429Retry(authRequest, undefined, {
+      bookingId: crypto.randomUUID(),
+      orderCode: 999999,
+      paymentMethod: "PAYOS",
+      transactionId: "PAYOS-MISSING-HEADER",
+      amount: 100000,
     });
 
-    // Invariant: Bắt buộc nhận 400 Bad Request theo chuẩn RFC 9457
     expect(invalidRes.status()).toBe(400);
     expect(invalidRes.headers()["content-type"]).toContain(
       "application/problem+json",
