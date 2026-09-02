@@ -2,29 +2,8 @@
   {
     "email": "user1@test.com",
     "userId": "019fa8bc-8f4d-7000-b366-e691f45cfb01",
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTlmYThiYy04ZjRkLTcwMDAtYjM2Ni1lNjkxZjQ1Y2ZiMDEiLCJlbWFpbCI6InVzZXIxQHRlc3QuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3ODgwOTgwNTEsImV4cCI6MTc4ODA5ODk1MX0.mzFzkdC8ZmEmJMFzqxvvCr5sv6gZTF4Ac89xNcA8nPY",
-    "refreshToken": "c67314b34ef634f700cd3eea9ad65b598b6f0b23e7521b9b313c4927406bf975",
-    "expiresAt": 1788098891617
-  },
-  {
-    "email": "user2@test.com",
-    "userId": "019fa8bc-8f4d-7000-b366-e691f45cfb02",
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTlmYThiYy04ZjRkLTcwMDAtYjM2Ni1lNjkxZjQ1Y2ZiMDIiLCJlbWFpbCI6InVzZXIyQHRlc3QuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3ODgwOTgwNTEsImV4cCI6MTc4ODA5ODk1MX0.HOn7W4pYoLyYqzg9m1WN-D34US_MFCETJT0Hbmnt5yg",
-    "refreshToken": "204c196ae1f4c8e4c4e9c7105aaaad1b614623a98acebc4b56b254d95a0ace04",
-    "expiresAt": 1788098891918
-  },
-  {
-    "email": "user3@test.com",
-    "userId": "019fa8bc-8f4d-7000-b366-e691f45cfb03",
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTlmYThiYy04ZjRkLTcwMDAtYjM2Ni1lNjkxZjQ1Y2ZiMDMiLCJlbWFpbCI6InVzZXIzQHRlc3QuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3ODgwOTgwNTEsImV4cCI6MTc4ODA5ODk1MX0.8fqtGF7ASeurZ5E9VBKRyymm4yAkZ8TEF85q47Tc62A",
-    "refreshToken": "97c60ea9304e630044eebad45363b295dc15fda0c22acc053a9df4b2e6568051",
-    "expiresAt": 1788098892040
-  },
-  {
-    "email": "user4@test.com",
-    "userId": "019fa8bc-8f4d-7000-b366-e691f45cfb04",
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTlmYThiYy04ZjRkLTcwMDAtYjM2Ni1lNjkxZjQ1Y2ZiMDQiLCJlbWFpbCI6InVzZXI0QHRlc3QuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3ODgwOTgwNTIsImV4cCI6MTc4ODA5ODk1Mn0.JhF9K-TiBpPVxL8fQxo22QSo6dZgYWACcnAXgQa0WMc",
-    "refreshToken": "ce05e252ea303d9733156ed66a96e945b0ec287b32e6dabc8f785e36b00eb918",
-    "expiresAt": 1788098892149
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTlmYThiYy04ZjRkLTcwMDAtYjM2Ni1lNjkxZjQ1Y2ZiMDEiLCJlbWFpbCI6InVzZXIxQHRlc3QuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3ODgzNTkwMDUsImV4cCI6MTc4ODM1OTkwNX0.V21eJuL0HIcasoWjeVBopEDRzyQ-DzWldNA9uNpVkC8",
+    "refreshToken": "1b5e0f2d160f00b17f439bc28c4eff1abc0c7c59297e0dd26561fcc32a9a6e71",
+    "expiresAt": 1788359845291
   }
 ]
