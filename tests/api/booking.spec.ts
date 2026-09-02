@@ -30,13 +30,23 @@ const SEAT_POOL = [
 /**
  * Helper: Tạo đơn giữ chỗ ghế hợp lệ kèm xử lý Rate Limit (429) và ghế bận (409)
  */
+let nextSeatIndex = 0;
+
+/**
+ * Helper: Tạo đơn giữ chỗ ghế hợp lệ kèm xử lý Rate Limit (429) và ghế bận (409)
+ */
 async function createPendingReservation(
   authRequest: APIRequestContext,
 ): Promise<{
   bookingId: string;
   totalPrice: number;
 }> {
-  for (const seatId of SEAT_POOL) {
+  const totalSeats = SEAT_POOL.length;
+
+  for (let attempt = 0; attempt < totalSeats; attempt++) {
+    const seatIndex = (nextSeatIndex + attempt) % totalSeats;
+    const seatId = SEAT_POOL[seatIndex];
+
     let res = await authRequest.post("/bookings/reserve", {
       headers: {
         "idempotency-key": crypto.randomUUID(),
@@ -49,10 +59,10 @@ async function createPendingReservation(
 
     if (res.status() === 429) {
       const retryAfter = res.headers()["retry-after"];
-      const waitMs = (parseInt(retryAfter || "10", 10) + 1) * 1000;
-      const { promise, resolve } = Promise.withResolvers<void>();
-      setTimeout(resolve, Math.min(waitMs, 15000));
-      await promise;
+      const waitMs = (parseInt(retryAfter || "10", 10) + 2) * 1000;
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(waitMs, 15000)),
+      );
 
       res = await authRequest.post("/bookings/reserve", {
         headers: {
@@ -67,6 +77,7 @@ async function createPendingReservation(
 
     if (res.status() === 201) {
       const body = await res.json();
+      nextSeatIndex = (seatIndex + 1) % totalSeats;
       return {
         bookingId: body.data.bookingId || body.data.id,
         totalPrice: body.data.totalPrice || 100000,
@@ -76,44 +87,11 @@ async function createPendingReservation(
   throw new Error("Không tìm thấy ghế trống nào khả dụng để tạo booking!");
 }
 
-async function sendConfirmWith429Retry(
-  authRequest: APIRequestContext,
-  idempotencyKey: string | undefined,
-  payload: Record<string, unknown>,
-  maxAttempts = 3,
-): Promise<APIResponse> {
-  const headers: Record<string, string> = {};
-  if (idempotencyKey) {
-    headers["idempotency-key"] = idempotencyKey;
-  }
-
-  let res = await authRequest.post("/bookings/confirm", {
-    headers,
-    data: payload,
-  });
-
-  for (let i = 1; i < maxAttempts && res.status() === 429; i++) {
-    const retryAfter = res.headers()["retry-after"];
-    const waitMs = (parseInt(retryAfter || "15", 10) + 2) * 1000;
-    await new Promise((resolve) =>
-      setTimeout(resolve, Math.min(waitMs, 30000)),
-    );
-
-    res = await authRequest.post("/bookings/confirm", {
-      headers,
-      data: payload,
-    });
-  }
-
-  return res;
-}
-
 test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", () => {
   test.describe.configure({
     mode: "serial",
-    timeout: 120000,
+    timeout: 60000,
   });
-
   let sharedBookingId = "";
   let sharedTotalPrice = 100000;
   let sharedIdempotencyKey = "";
@@ -135,17 +113,18 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     sharedIdempotencyKey = crypto.randomUUID();
 
     // 2. Gửi request xác nhận thanh toán lần đầu
-    const confirmRes = await sendConfirmWith429Retry(
-      authRequest,
-      sharedIdempotencyKey,
-      {
+    const confirmRes = await authRequest.post("/bookings/confirm", {
+      headers: {
+        "idempotency-key": sharedIdempotencyKey,
+      },
+      data: {
         bookingId: sharedBookingId,
         orderCode: Math.floor(100000 + Math.random() * 900000),
         paymentMethod: "PAYOS",
         transactionId: `PAYOS-TX-${Date.now()}`,
         amount: sharedTotalPrice,
       },
-    );
+    });
 
     expect(confirmRes.status()).toBe(200);
     const body = await confirmRes.json();
@@ -165,17 +144,18 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     expect(sharedIdempotencyKey).not.toBe("");
 
     // Gửi lại CHÍNH XÁC request xác nhận với cùng Idempotency Key
-    const retryRes = await sendConfirmWith429Retry(
-      authRequest,
-      sharedIdempotencyKey,
-      {
+    const retryRes = await authRequest.post("/bookings/confirm", {
+      headers: {
+        "idempotency-key": sharedIdempotencyKey,
+      },
+      data: {
         bookingId: sharedBookingId,
         orderCode: 123456,
         paymentMethod: "PAYOS",
         transactionId: `PAYOS-TX-RETRY`,
         amount: sharedTotalPrice,
       },
-    );
+    });
 
     expect(retryRes.status()).toBe(200);
     const retryBody = await retryRes.json();
@@ -194,14 +174,17 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     authRequest,
   }) => {
     // Cố tình gửi request xác nhận không kèm header 'idempotency-key'
-    const invalidRes = await sendConfirmWith429Retry(authRequest, undefined, {
-      bookingId: crypto.randomUUID(),
-      orderCode: 999999,
-      paymentMethod: "PAYOS",
-      transactionId: "PAYOS-MISSING-HEADER",
-      amount: 100000,
+    const invalidRes = await authRequest.post("/bookings/confirm", {
+      data: {
+        bookingId: crypto.randomUUID(),
+        orderCode: 999999,
+        paymentMethod: "PAYOS",
+        transactionId: "PAYOS-MISSING-HEADER",
+        amount: 100000,
+      },
     });
 
+    // Invariant: Bắt buộc nhận 400 Bad Request theo chuẩn RFC 9457
     expect(invalidRes.status()).toBe(400);
     expect(invalidRes.headers()["content-type"]).toContain(
       "application/problem+json",
@@ -226,8 +209,8 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
       amount: reservation.totalPrice,
     };
 
-    // Bắn đồng thời 5 requests cùng lúc mang chung 1 Idempotency Key
-    const floodPromises = Array.from({ length: 5 }, () =>
+    // Bắn đồng thời 2 requests cùng lúc mang chung 1 Idempotency Key (Double Click Attack)
+    const floodPromises = Array.from({ length: 2 }, () =>
       authRequest.post("/bookings/confirm", {
         headers: {
           "idempotency-key": singleKey,

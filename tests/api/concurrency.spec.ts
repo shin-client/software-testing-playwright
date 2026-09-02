@@ -140,7 +140,7 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
     const result = await fireConcurrentBookingWithFallback(
       activeClients,
       targetShowId,
-      SEAT_POOL.slice(0, 5),
+      SEAT_POOL.slice(0, 4),
     );
 
     // Assert bất biến toán học: Đúng 1 thành công (201), N-1 thất bại do tranh chấp (409)
@@ -170,7 +170,7 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
     const reservation = await acquireSingleReservationWithFallback(
       user1Ctx,
       targetShowId,
-      SEAT_POOL.slice(5, 10),
+      SEAT_POOL.slice(4, 7),
     );
 
     expect(reservation).not.toBeNull();
