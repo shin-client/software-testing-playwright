@@ -70,7 +70,7 @@ jobs:
         run: |
           bun install --frozen-lockfile
           bun drizzle-kit push --config drizzle.config.ts
-          bun run db:seed:reset
+          bun src/database/seeds/index.ts --reset
 
       - name: Install Playwright Dependencies & Browsers
         working-directory: software-testing-playwright
