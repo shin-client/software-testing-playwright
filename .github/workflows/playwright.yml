@@ -51,6 +51,8 @@ jobs:
           path: software-testing-playwright
 
       - name: Checkout Backend Service (ticket-booking)
+        id: checkout_backend
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: shin-client/ticket-booking
@@ -63,6 +65,7 @@ jobs:
           bun-version: latest
 
       - name: Install Backend Dependencies & Seed Test Database
+        if: steps.checkout_backend.outcome == 'success'
         working-directory: ticket-booking
         env:
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
@@ -77,6 +80,7 @@ jobs:
           bun src/database/seeds/index.ts --reset
 
       - name: Start Backend Server
+        if: steps.checkout_backend.outcome == 'success'
         working-directory: ticket-booking
         env:
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
@@ -104,17 +108,17 @@ jobs:
         working-directory: software-testing-playwright
         run: bun run lint
 
-      - name: Run Playwright API Tests (Against Local Ephemeral Backend)
+      - name: Run Playwright API Tests
         working-directory: software-testing-playwright
         env:
-          API_BASE_URL: http://127.0.0.1:3000
+          API_BASE_URL: ${{ steps.checkout_backend.outcome == 'success' && 'http://127.0.0.1:3000' || secrets.API_BASE_URL || 'https://ticket-booking-amqv.onrender.com' }}
           CI: true
         run: bun run test:api
 
       - name: Run Playwright Web UI Tests (SauceDemo E2E)
         working-directory: software-testing-playwright
         env:
-          WEB_BASE_URL: https://www.saucedemo.com
+          WEB_BASE_URL: ${{ secrets.WEB_BASE_URL || 'https://www.saucedemo.com' }}
           CI: true
         run: bun run test:e2e
 
