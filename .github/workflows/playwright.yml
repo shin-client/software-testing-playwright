@@ -50,14 +50,12 @@ jobs:
         with:
           path: software-testing-playwright
 
-      - name: Checkout Backend Service (ticket-booking)
+      - name: Checkout Backend Service (ngxccc/ticket-booking)
         id: checkout_backend
-        continue-on-error: true
         uses: actions/checkout@v4
         with:
-          repository: shin-client/ticket-booking
+          repository: ngxccc/ticket-booking
           path: ticket-booking
-          token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Setup Bun Runtime
         uses: oven-sh/setup-bun@v2
@@ -65,7 +63,6 @@ jobs:
           bun-version: latest
 
       - name: Install Backend Dependencies & Seed Test Database
-        if: steps.checkout_backend.outcome == 'success'
         working-directory: ticket-booking
         env:
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
@@ -80,7 +77,6 @@ jobs:
           bun src/database/seeds/index.ts --reset
 
       - name: Start Backend Server
-        if: steps.checkout_backend.outcome == 'success'
         working-directory: ticket-booking
         env:
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
@@ -108,10 +104,10 @@ jobs:
         working-directory: software-testing-playwright
         run: bun run lint
 
-      - name: Run Playwright API Tests
+      - name: Run Playwright API Tests (Against Local Ephemeral Backend)
         working-directory: software-testing-playwright
         env:
-          API_BASE_URL: ${{ steps.checkout_backend.outcome == 'success' && 'http://127.0.0.1:3000' || secrets.API_BASE_URL || 'https://ticket-booking-amqv.onrender.com' }}
+          API_BASE_URL: http://127.0.0.1:3000
           CI: true
         run: bun run test:api
 
