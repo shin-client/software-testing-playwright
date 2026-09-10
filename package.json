@@ -18,7 +18,8 @@
     "lint": "eslint . --fix --cache",
     "check": "tsc --noEmit && eslint . --fix --cache",
     "report": "playwright show-report",
-    "codegen": "playwright codegen https://www.saucedemo.com"
+    "codegen": "playwright codegen https://www.saucedemo.com",
+    "sync:seats": "bun scripts/sync-seats.ts"
   },
   "keywords": [
     "playwright",
@@ -33,11 +34,13 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
     "dotenv": "^17.4.2",
     "eslint": "^10.8.1",
     "eslint-plugin-playwright": "^2.11.0",
     "globals": "^17.11.0",
     "jiti": "^2.7.0",
+    "pg": "^8.23.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0"
   },

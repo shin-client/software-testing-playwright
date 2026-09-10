@@ -17,7 +17,8 @@
     "fixtures/**/*",
     "utils/**/*",
     "playwright.config.ts",
+    "scripts/**/*",
     "eslint.config.ts",
-    "schemas/**/*"  
+    "schemas/**/*"
   ]
 }

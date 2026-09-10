@@ -99,6 +99,10 @@ jobs:
           bun install --frozen-lockfile
           bunx playwright install --with-deps chromium
 
+      - name: Sync Seat Pool Fixture
+        working-directory: software-testing-playwright
+        run: bun run sync:seats
+
       - name: Run TypeScript Typecheck
         working-directory: software-testing-playwright
         run: bun run typecheck
