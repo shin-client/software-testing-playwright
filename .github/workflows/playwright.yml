@@ -138,12 +138,13 @@ jobs:
           SHOW_CREATION_MIN_LEAD_MINUTES: "10"
           VUS: "500"
         run: |
-          cat << 'EOF' > start-server.ts
+          cat << 'EOF' > test/standalone-server.ts
+          import { test } from "bun:test";
           import { Test } from "@nestjs/testing";
-          import { AppModule } from "./src/app.module";
-          import { ZodValidationPipe } from "./src/common/pipes/zod-validation.pipe";
+          import { AppModule } from "../src/app.module";
+          import { ZodValidationPipe } from "../src/common/pipes/zod-validation.pipe";
 
-          async function bootstrap() {
+          test("launch-standalone-backend-server", async () => {
             const moduleFixture = await Test.createTestingModule({
               imports: [AppModule],
             }).compile();
@@ -152,11 +153,13 @@ jobs:
             app.useGlobalPipes(new ZodValidationPipe());
             await app.listen(Number(process.env.PORT) || 3000);
             console.log("NestJS Test Server listening on http://127.0.0.1:3000");
-          }
-          void bootstrap();
+
+            // Keep the server process alive indefinitely for incoming Playwright requests
+            await new Promise(() => {});
+          }, { timeout: 0 });
           EOF
 
-          bun run start-server.ts &
+          bun test test/standalone-server.ts &
           bunx wait-on http://127.0.0.1:3000/ --timeout 60000
 
       - name: Install Playwright Dependencies & Browsers
