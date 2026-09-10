@@ -65,6 +65,7 @@ jobs:
       - name: Install Backend Dependencies & Seed Test Database
         working-directory: ticket-booking
         env:
+          DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
           REDIS_URL: redis://localhost:6379
           NODE_ENV: test
@@ -78,6 +79,7 @@ jobs:
       - name: Start Backend Server
         working-directory: ticket-booking
         env:
+          DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
           REDIS_URL: redis://localhost:6379
           NODE_ENV: test
@@ -86,7 +88,7 @@ jobs:
           JWT_REFRESH_SECRET: super-secret-refresh-jwt-key-minimum-32-chars-long
         run: |
           bun run src/main.ts &
-          bunx wait-on http://127.0.0.1:3000/health --timeout 60000
+          bunx wait-on http://127.0.0.1:3000/ --timeout 60000
 
       - name: Install Playwright Dependencies & Browsers
         working-directory: software-testing-playwright
