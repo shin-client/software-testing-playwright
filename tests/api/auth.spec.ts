@@ -37,8 +37,8 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
 
   // Seeded User sẵn có trong DB không cần verify email
   const seededUser = {
-    email: "user1@test.com",
-    password: "Password123!",
+    email: "user@ticketbooking.com",
+    password: "Password123!@#",
   };
 
   let currentAccessToken = "";

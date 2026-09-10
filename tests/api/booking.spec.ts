@@ -1,7 +1,16 @@
+import type { APIRequestContext, APIResponse } from "@playwright/test";
 import { expect, test } from "../../fixtures/api.fixture.js";
 import { ProblemDetailsSchema } from "../../schemas/rfc9457.schema.js";
 import crypto from "node:crypto";
-import type { APIRequestContext, APIResponse } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
+
+const seatPoolData = JSON.parse(
+  fs.readFileSync(
+    path.resolve(process.cwd(), "fixtures/seat-pool.json"),
+    "utf-8",
+  ),
+);
 
 /**
  * WBS 2.3: API Booking Transaction, Payment Confirmation & Idempotency Verification
@@ -13,19 +22,8 @@ import type { APIRequestContext, APIResponse } from "@playwright/test";
  *  3. Header Enforcement: Missing 'idempotency-key' triggers RFC 9457 compliant 400 Bad Request.
  */
 
-const TARGET_SHOW_ID = "019fa8bc-8f4d-7000-b366-e691f45cfb8f";
-const SEAT_POOL = [
-  "019fa8bc-8f4d-7000-b366-e691f45cfb51", // A1
-  "019fa8bc-8f4d-7000-b366-e691f45cfb52", // A2
-  "019fa8bc-8f4d-7000-b366-e691f45cfb53", // A3
-  "019fa8bc-8f4d-7000-b366-e691f45cfb54", // A4
-  "019fa8bc-8f4d-7000-b366-e691f45cfb55", // A5
-  "019fa8bc-8f4d-7000-b366-e691f45cfb56", // A6
-  "019fa8bc-8f4d-7000-b366-e691f45cfb57", // A7
-  "019fa8bc-8f4d-7000-b366-e691f45cfb58", // A8
-  "019fa8bc-8f4d-7000-b366-e691f45cfb59", // A9
-  "019fa8bc-8f4d-7000-b366-e691f45cfb5a", // A10
-];
+const TARGET_SHOW_ID = seatPoolData.showId;
+const SEAT_POOL = seatPoolData.seatIds.slice(0, 40);
 
 /**
  * Helper: Tạo đơn giữ chỗ ghế hợp lệ kèm xử lý Rate Limit (429) và ghế bận (409)

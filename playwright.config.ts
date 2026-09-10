@@ -28,6 +28,7 @@ export default defineConfig({
   retries: isCI ? 1 : 0,
   workers: 1,
   reporter: [
+    ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],
     ["json", { outputFile: "test-results/results.json" }],
     ["junit", { outputFile: "test-results/junit.xml" }],

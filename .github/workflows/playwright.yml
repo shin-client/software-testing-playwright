@@ -14,6 +14,7 @@ concurrency:
 jobs:
   test:
     name: Run Playwright Dual-Engine Test Suite
+    timeout-minutes: 20
     runs-on: ubuntu-latest
 
     services:
@@ -71,6 +72,26 @@ jobs:
           bun install --frozen-lockfile
           bun drizzle-kit push --config drizzle.config.ts
           bun src/database/seeds/index.ts --reset
+
+      - name: Restore Backend Build Cache
+        uses: actions/cache@v6
+        id: backend-dist-cache
+        with:
+          path: ticket-booking/dist
+          key: backend-dist-${{ hashFiles('ticket-booking/src/**', 'ticket-booking/package.json', 'ticket-booking/bun.lockb', 'ticket-booking/nest-cli.json') }}
+          restore-keys: |
+            backend-dist-
+
+      - name: Build Backend Service
+        if: steps.backend-dist-cache.outputs.cache-hit != 'true'
+        working-directory: ticket-booking
+        run: bun run build
+
+      - name: Start Ephemeral Backend Server
+        working-directory: ticket-booking
+        run: |
+          bun dist/main.js &
+          bunx wait-on http://127.0.0.1:3000/ --timeout 60000
 
       - name: Install Playwright Dependencies & Browsers
         working-directory: software-testing-playwright

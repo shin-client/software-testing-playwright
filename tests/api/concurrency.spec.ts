@@ -2,6 +2,15 @@ import type { APIRequestContext, APIResponse } from "@playwright/test";
 import { expect, test } from "@/fixtures/api.fixture.js";
 import { ProblemDetailsSchema } from "../../schemas/rfc9457.schema.js";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
+const seatPoolData = JSON.parse(
+  fs.readFileSync(
+    path.resolve(process.cwd(), "fixtures/seat-pool.json"),
+    "utf-8",
+  ),
+);
 
 /**
  * WBS 2.2: API Concurrency & Redis Redlock Race Condition Test Suite
@@ -14,18 +23,8 @@ import crypto from "node:crypto";
  */
 
 // Danh sách 10 ghế đã được seed trong DB (A1 -> A10)
-const SEAT_POOL = [
-  "019fa8bc-8f4d-7000-b366-e691f45cfb51", // A1
-  "019fa8bc-8f4d-7000-b366-e691f45cfb52", // A2
-  "019fa8bc-8f4d-7000-b366-e691f45cfb53", // A3
-  "019fa8bc-8f4d-7000-b366-e691f45cfb54", // A4
-  "019fa8bc-8f4d-7000-b366-e691f45cfb55", // A5
-  "019fa8bc-8f4d-7000-b366-e691f45cfb56", // A6
-  "019fa8bc-8f4d-7000-b366-e691f45cfb57", // A7
-  "019fa8bc-8f4d-7000-b366-e691f45cfb58", // A8
-  "019fa8bc-8f4d-7000-b366-e691f45cfb59", // A9
-  "019fa8bc-8f4d-7000-b366-e691f45cfb5a", // A10
-];
+const TARGET_SHOW_ID = seatPoolData.showId;
+const SEAT_POOL = seatPoolData.seatIds.slice(40, 80);
 
 interface ConcurrentResult {
   createdResponses: APIResponse[];
@@ -134,13 +133,13 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
   test("TC-CONCUR-01: High-Contention Simultaneous Seat Booking (Concurrent Race Condition)", async ({
     concurrencyAuthRequests,
   }) => {
-    const targetShowId = "019fa8bc-8f4d-7000-b366-e691f45cfb8f";
+    const targetShowId = TARGET_SHOW_ID;
     const activeClients = concurrencyAuthRequests.slice(0, 4);
 
     const result = await fireConcurrentBookingWithFallback(
       activeClients,
       targetShowId,
-      SEAT_POOL.slice(0, 4),
+      SEAT_POOL.slice(0, 15),
     );
 
     // Assert bất biến toán học: Đúng 1 thành công (201), N-1 thất bại do tranh chấp (409)
@@ -165,12 +164,12 @@ test.describe("WBS 2.2: Concurrency Race Condition & Redis Redlock Testing", () 
   }) => {
     const user1Ctx = concurrencyAuthRequests[0];
     const user2Ctx = concurrencyAuthRequests[1];
-    const targetShowId = "019fa8bc-8f4d-7000-b366-e691f45cfb8f";
+    const targetShowId = TARGET_SHOW_ID;
 
     const reservation = await acquireSingleReservationWithFallback(
       user1Ctx,
       targetShowId,
-      SEAT_POOL.slice(4, 7),
+      SEAT_POOL.slice(15),
     );
 
     expect(reservation).not.toBeNull();

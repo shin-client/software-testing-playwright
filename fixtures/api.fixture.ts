@@ -24,7 +24,9 @@ function isTokenValid(token?: string): boolean {
     const payload = JSON.parse(
       Buffer.from(parts[1], "base64url").toString("utf-8"),
     );
-    return typeof payload.exp === "number" && payload.exp * 1000 > Date.now() + 60000;
+    return (
+      typeof payload.exp === "number" && payload.exp * 1000 > Date.now() + 60000
+    );
   } catch {
     return false;
   }
@@ -35,11 +37,20 @@ async function acquireToken(
   email: string,
   existing?: StoredToken,
 ): Promise<StoredToken> {
-  const password = "Password123!";
+  const password = "Password123!@#";
 
-  // 1. Nếu token cũ còn hạn, tái sử dụng ngay lập tức
+  // 1. Nếu token cũ còn hạn, kiểm tra tính hợp lệ với server hiện tại
   if (existing?.accessToken && isTokenValid(existing.accessToken)) {
-    return existing;
+    try {
+      const checkRes = await requestContext.get("/users/me", {
+        headers: { Authorization: `Bearer ${existing.accessToken}` },
+      });
+      if (checkRes.status() === 200) {
+        return existing;
+      }
+    } catch {
+      // Token không hợp lệ với server hiện tại (đổi secret hoặc reset db)
+    }
   }
 
   // 2. Nếu có refreshToken, refresh nhanh qua /auth/refresh (không bị dính 5 req/phút của /auth/login)
@@ -80,6 +91,25 @@ async function acquireToken(
         expiresAt: Date.now() + 14 * 60 * 1000,
       };
     }
+    if (
+      (loginRes.status() === 400 || loginRes.status() === 401) &&
+      attempt === 1
+    ) {
+      // Tự động đăng ký user nếu chưa tồn tại trong CSDL mới
+      await requestContext
+        .post("/auth/register", {
+          data: {
+            email,
+            password,
+            confirmPassword: password,
+            fullName: `Test User ${email.split("@")[0]}`,
+            phoneNumber: `090${Math.floor(1000000 + Math.random() * 9000000)}`,
+            agreeTerms: true,
+          },
+        })
+        .catch(() => {});
+      continue;
+    }
     if (loginRes.status() === 429 && attempt < 3) {
       const { promise, resolve } = Promise.withResolvers<void>();
       setTimeout(resolve, 4000 * attempt);
@@ -98,7 +128,10 @@ async function getTokensPool(
   requestContext: APIRequestContext,
   numUsers = 10,
 ): Promise<string[]> {
-  const tokensFilePath = path.resolve(process.cwd(), "fixtures/auth-tokens.json");
+  const tokensFilePath = path.resolve(
+    process.cwd(),
+    "fixtures/auth-tokens.json",
+  );
   let storedTokens: StoredToken[] = [];
 
   try {
@@ -113,8 +146,8 @@ async function getTokensPool(
   let hasChanges = false;
 
   for (let i = 0; i < numUsers; i++) {
-    const email = `user${i + 1}@test.com`;
-    const existing = storedTokens[i];
+    const email = i === 0 ? "user@ticketbooking.com" : `user${i + 1}@test.com`;
+    const existing = storedTokens.find((t) => t.email === email);
     const tokenObj = await acquireToken(requestContext, email, existing);
     updatedTokens.push(tokenObj);
 
