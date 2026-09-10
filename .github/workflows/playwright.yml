@@ -46,13 +46,13 @@ jobs:
 
     steps:
       - name: Checkout Playwright Test Suite
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: software-testing-playwright
 
       - name: Checkout Backend Service (ngxccc/ticket-booking)
         id: checkout_backend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ngxccc/ticket-booking
           path: ticket-booking
@@ -62,7 +62,7 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Backend Dependencies & Seed Test Database
+      - name: Install Backend Dependencies, Build & Seed Test Database
         working-directory: ticket-booking
         env:
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
@@ -76,9 +76,10 @@ jobs:
           PAYOS_API_KEY: dummy-api-key
           PAYOS_CHECKSUM_KEY: dummy-checksum-key
         run: |
-          bun install --frozen-lockfile || bun install
-          bunx drizzle-kit push --config drizzle.config.ts
+          bun install --frozen-lockfile
+          bun drizzle-kit push --config drizzle.config.ts
           bun src/database/seeds/index.ts --reset
+          bun run build
 
       - name: Start Backend Server
         working-directory: ticket-booking
@@ -95,13 +96,13 @@ jobs:
           PAYOS_API_KEY: dummy-api-key
           PAYOS_CHECKSUM_KEY: dummy-checksum-key
         run: |
-          bun run src/main.ts &
+          bun dist/main.js &
           bunx wait-on http://127.0.0.1:3000/ --timeout 60000
 
       - name: Install Playwright Dependencies & Browsers
         working-directory: software-testing-playwright
         run: |
-          bun install --frozen-lockfile || bun install
+          bun install --frozen-lockfile
           bunx playwright install --with-deps chromium
 
       - name: Run TypeScript Typecheck
