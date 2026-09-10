@@ -63,7 +63,7 @@ jobs:
 
       - name: Export Unified Environment Variables (.env.test)
         run: |
-          cat software-testing-playwright/.env.test >> $GITHUB_ENV
+          grep -E '^[A-Za-z_][A-Za-z0-9_]*=' software-testing-playwright/.env.test >> $GITHUB_ENV
 
       - name: Install Backend Dependencies & Seed Test Database
         working-directory: ticket-booking
