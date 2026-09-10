@@ -14,7 +14,6 @@ concurrency:
 jobs:
   test:
     name: Run Playwright Dual-Engine Test Suite
-    timeout-minutes: 20
     runs-on: ubuntu-latest
 
     services:
@@ -46,13 +45,13 @@ jobs:
 
     steps:
       - name: Checkout Playwright Test Suite
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: software-testing-playwright
 
       - name: Checkout Backend Service (ngxccc/ticket-booking)
         id: checkout_backend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ngxccc/ticket-booking
           path: ticket-booking
@@ -69,41 +68,14 @@ jobs:
       - name: Install Backend Dependencies & Seed Test Database
         working-directory: ticket-booking
         run: |
-          bun install --frozen-lockfile || bun install
-          bunx drizzle-kit push --config drizzle.config.ts
-          bun src/database/seeds/index.ts --reset
-
-      - name: Start Ephemeral Backend Server
-        working-directory: ticket-booking
-        run: |
-          cat << 'EOF' > test/standalone-server.spec.ts
-          import { test } from "bun:test";
-          import { Test } from "@nestjs/testing";
-          import { AppModule } from "../src/app.module";
-          import { ZodValidationPipe } from "../src/common/pipes/zod-validation.pipe";
-
-          test("launch-standalone-backend-server", async () => {
-            const moduleFixture = await Test.createTestingModule({
-              imports: [AppModule],
-            }).compile();
-
-            const app = moduleFixture.createNestApplication();
-            app.useGlobalPipes(new ZodValidationPipe());
-            await app.listen(Number(process.env.PORT) || 3000);
-            console.log("NestJS Test Server listening on http://127.0.0.1:3000");
-
-            // Keep the server process alive indefinitely for incoming Playwright requests
-            await new Promise(() => {});
-          }, { timeout: 0 });
-          EOF
-
-          bun test ./test/standalone-server.spec.ts &
-          bunx wait-on http://127.0.0.1:3000/ --timeout 60000
+          bun install --frozen-lockfile
+          bun drizzle-kit push --config drizzle.config.ts
+          bun run db:seed:reset
 
       - name: Install Playwright Dependencies & Browsers
         working-directory: software-testing-playwright
         run: |
-          bun install --frozen-lockfile || bun install
+          bun install --frozen-lockfile
           bunx playwright install --with-deps chromium
 
       - name: Run TypeScript Typecheck
@@ -114,7 +86,7 @@ jobs:
         working-directory: software-testing-playwright
         run: bun run lint
 
-      - name: Run Playwright API Tests (Against Local Ephemeral Backend)
+      - name: Run Playwright API Tests
         working-directory: software-testing-playwright
         env:
           CI: true
@@ -127,7 +99,7 @@ jobs:
         run: bun run test:e2e
 
       - name: Upload Playwright HTML Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -135,7 +107,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Test Results & Traces
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: test-results
