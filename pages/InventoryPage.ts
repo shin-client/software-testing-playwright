@@ -22,11 +22,11 @@ export class InventoryPage {
     await item.getByRole('button', { name: 'Remove' }).click();
   }
 
-  async goToCart(): Promise<void> {
-    await this.header.openCart();
-  }
-  
   getItemButton(productName: string): Locator {
     return this.inventoryItems.filter({ hasText: productName }).getByRole('button');
+  }
+
+  async goToCart(): Promise<void> {
+    await this.header.openCart();
   }
 }

@@ -18,6 +18,6 @@
     "utils/**/*",
     "playwright.config.ts",
     "eslint.config.ts",
-    "schemas/**/*"
+    "schemas/**/*"  
   ]
 }
