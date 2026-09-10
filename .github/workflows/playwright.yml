@@ -71,6 +71,10 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: super-secret-jwt-key-minimum-32-chars-long
           JWT_REFRESH_SECRET: super-secret-refresh-jwt-key-minimum-32-chars-long
+          RESEND_API_KEY: re_dummy_api_key_for_testing
+          PAYOS_CLIENT_ID: dummy-client-id
+          PAYOS_API_KEY: dummy-api-key
+          PAYOS_CHECKSUM_KEY: dummy-checksum-key
         run: |
           bun install --frozen-lockfile || bun install
           bunx drizzle-kit push --config drizzle.config.ts
@@ -86,6 +90,10 @@ jobs:
           PORT: 3000
           JWT_SECRET: super-secret-jwt-key-minimum-32-chars-long
           JWT_REFRESH_SECRET: super-secret-refresh-jwt-key-minimum-32-chars-long
+          RESEND_API_KEY: re_dummy_api_key_for_testing
+          PAYOS_CLIENT_ID: dummy-client-id
+          PAYOS_API_KEY: dummy-api-key
+          PAYOS_CHECKSUM_KEY: dummy-checksum-key
         run: |
           bun run src/main.ts &
           bunx wait-on http://127.0.0.1:3000/ --timeout 60000
