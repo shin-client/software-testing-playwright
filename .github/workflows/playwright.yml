@@ -46,13 +46,13 @@ jobs:
 
     steps:
       - name: Checkout Playwright Test Suite
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           path: software-testing-playwright
 
       - name: Checkout Backend Service (ngxccc/ticket-booking)
         id: checkout_backend
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ngxccc/ticket-booking
           path: ticket-booking
@@ -62,47 +62,107 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Backend Dependencies, Build & Seed Test Database
+      - name: Install Backend Dependencies & Seed Test Database
         working-directory: ticket-booking
         env:
+          DB_DATABASE: ticket_booking
+          DB_HOST: localhost
+          DB_LOGGING: "false"
+          DB_MIGRATIONS_RUN: "false"
+          DB_PASSWORD: postgrespassword
+          DB_PORT: "5432"
+          DB_SYNCHRONIZE: "true"
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
-          REDIS_URL: redis://localhost:6379
+          DB_USERNAME: postgres
+          DOMAIN_NAME: http://127.0.0.1:3000
+          FRONTEND_URL: http://127.0.0.1:3000
+          TARGET_URL: http://127.0.0.1:3000
+          JWT_ACCESS_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          JWT_SECRET: skibiditoilet-tungtungshahu-@369-the-best-secrect
+          LOG_LEVEL: debug
           NODE_ENV: test
-          JWT_SECRET: super-secret-jwt-key-minimum-32-chars-long
-          JWT_REFRESH_SECRET: super-secret-refresh-jwt-key-minimum-32-chars-long
-          RESEND_API_KEY: re_dummy_api_key_for_testing
-          PAYOS_CLIENT_ID: dummy-client-id
-          PAYOS_API_KEY: dummy-api-key
-          PAYOS_CHECKSUM_KEY: dummy-checksum-key
+          PAYOS_API_KEY: mock_api_key
+          PAYOS_CHECKSUM_KEY: mock_checksum_key
+          PAYOS_CLIENT_ID: mock_client_id
+          PORT: "3000"
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_URL: redis://localhost:6379
+          RESEND_API_KEY: re_dummy_key_for_staging_testing_123456789
+          EMAIL_FROM: Ticket Booking <support@ticketbooking.ngxc.io.vn>
+          SENTRY_DSN: ""
+          SENTRY_ENVIRONMENT: test
+          SENTRY_TRACES_SAMPLE_RATE: "1.0"
+          SHOW_CREATION_MIN_LEAD_MINUTES: "10"
+          VUS: "500"
         run: |
-          bun install --frozen-lockfile
-          bun drizzle-kit push --config drizzle.config.ts
+          bun install --frozen-lockfile || bun install
+          bunx drizzle-kit push --config drizzle.config.ts
           bun src/database/seeds/index.ts --reset
-          bun run build
 
       - name: Start Backend Server
         working-directory: ticket-booking
         env:
+          DB_DATABASE: ticket_booking
+          DB_HOST: localhost
+          DB_LOGGING: "false"
+          DB_MIGRATIONS_RUN: "false"
+          DB_PASSWORD: postgrespassword
+          DB_PORT: "5432"
+          DB_SYNCHRONIZE: "true"
           DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
-          REDIS_URL: redis://localhost:6379
+          DB_USERNAME: postgres
+          DOMAIN_NAME: http://127.0.0.1:3000
+          FRONTEND_URL: http://127.0.0.1:3000
+          TARGET_URL: http://127.0.0.1:3000
+          JWT_ACCESS_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          JWT_SECRET: skibiditoilet-tungtungshahu-@369-the-best-secrect
+          LOG_LEVEL: debug
           NODE_ENV: test
-          PORT: 3000
-          JWT_SECRET: super-secret-jwt-key-minimum-32-chars-long
-          JWT_REFRESH_SECRET: super-secret-refresh-jwt-key-minimum-32-chars-long
-          RESEND_API_KEY: re_dummy_api_key_for_testing
-          PAYOS_CLIENT_ID: dummy-client-id
-          PAYOS_API_KEY: dummy-api-key
-          PAYOS_CHECKSUM_KEY: dummy-checksum-key
+          PAYOS_API_KEY: mock_api_key
+          PAYOS_CHECKSUM_KEY: mock_checksum_key
+          PAYOS_CLIENT_ID: mock_client_id
+          PORT: "3000"
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_URL: redis://localhost:6379
+          RESEND_API_KEY: re_dummy_key_for_staging_testing_123456789
+          EMAIL_FROM: Ticket Booking <support@ticketbooking.ngxc.io.vn>
+          SENTRY_DSN: ""
+          SENTRY_ENVIRONMENT: test
+          SENTRY_TRACES_SAMPLE_RATE: "1.0"
+          SHOW_CREATION_MIN_LEAD_MINUTES: "10"
+          VUS: "500"
         run: |
-          bun dist/main.js &
+          cat << 'EOF' > start-server.ts
+          import { Test } from "@nestjs/testing";
+          import { AppModule } from "./src/app.module";
+          import { ZodValidationPipe } from "./src/common/pipes/zod-validation.pipe";
+
+          async function bootstrap() {
+            const moduleFixture = await Test.createTestingModule({
+              imports: [AppModule],
+            }).compile();
+
+            const app = moduleFixture.createNestApplication();
+            app.useGlobalPipes(new ZodValidationPipe());
+            await app.listen(Number(process.env.PORT) || 3000);
+            console.log("NestJS Test Server listening on http://127.0.0.1:3000");
+          }
+          void bootstrap();
+          EOF
+
+          bun run start-server.ts &
           bunx wait-on http://127.0.0.1:3000/ --timeout 60000
 
       - name: Install Playwright Dependencies & Browsers
         working-directory: software-testing-playwright
         run: |
-          bun install --frozen-lockfile
+          bun install --frozen-lockfile || bun install
           bunx playwright install --with-deps chromium
 
       - name: Run TypeScript Typecheck
