@@ -62,83 +62,21 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Export Unified Environment Variables (.env.test)
+        run: |
+          cat software-testing-playwright/.env.test >> $GITHUB_ENV
+
       - name: Install Backend Dependencies & Seed Test Database
         working-directory: ticket-booking
-        env:
-          DB_DATABASE: ticket_booking
-          DB_HOST: localhost
-          DB_LOGGING: "false"
-          DB_MIGRATIONS_RUN: "false"
-          DB_PASSWORD: postgrespassword
-          DB_PORT: "5432"
-          DB_SYNCHRONIZE: "true"
-          DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
-          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
-          DB_USERNAME: postgres
-          DOMAIN_NAME: http://127.0.0.1:3000
-          FRONTEND_URL: http://127.0.0.1:3000
-          TARGET_URL: http://127.0.0.1:3000
-          JWT_ACCESS_EXPIRES_IN: 15m
-          JWT_REFRESH_EXPIRES_IN: 7d
-          JWT_SECRET: skibiditoilet-tungtungshahu-@369-the-best-secrect
-          LOG_LEVEL: debug
-          NODE_ENV: test
-          PAYOS_API_KEY: mock_api_key
-          PAYOS_CHECKSUM_KEY: mock_checksum_key
-          PAYOS_CLIENT_ID: mock_client_id
-          PORT: "3000"
-          REDIS_HOST: localhost
-          REDIS_PORT: "6379"
-          REDIS_URL: redis://localhost:6379
-          RESEND_API_KEY: re_dummy_key_for_staging_testing_123456789
-          EMAIL_FROM: Ticket Booking <support@ticketbooking.ngxc.io.vn>
-          SENTRY_DSN: ""
-          SENTRY_ENVIRONMENT: test
-          SENTRY_TRACES_SAMPLE_RATE: "1.0"
-          SHOW_CREATION_MIN_LEAD_MINUTES: "10"
-          VUS: "500"
         run: |
           bun install --frozen-lockfile || bun install
           bunx drizzle-kit push --config drizzle.config.ts
           bun src/database/seeds/index.ts --reset
 
-      - name: Start Backend Server
+      - name: Start Ephemeral Backend Server
         working-directory: ticket-booking
-        env:
-          DB_DATABASE: ticket_booking
-          DB_HOST: localhost
-          DB_LOGGING: "false"
-          DB_MIGRATIONS_RUN: "false"
-          DB_PASSWORD: postgrespassword
-          DB_PORT: "5432"
-          DB_SYNCHRONIZE: "true"
-          DB_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
-          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/ticket_booking?sslmode=disable
-          DB_USERNAME: postgres
-          DOMAIN_NAME: http://127.0.0.1:3000
-          FRONTEND_URL: http://127.0.0.1:3000
-          TARGET_URL: http://127.0.0.1:3000
-          JWT_ACCESS_EXPIRES_IN: 15m
-          JWT_REFRESH_EXPIRES_IN: 7d
-          JWT_SECRET: skibiditoilet-tungtungshahu-@369-the-best-secrect
-          LOG_LEVEL: debug
-          NODE_ENV: test
-          PAYOS_API_KEY: mock_api_key
-          PAYOS_CHECKSUM_KEY: mock_checksum_key
-          PAYOS_CLIENT_ID: mock_client_id
-          PORT: "3000"
-          REDIS_HOST: localhost
-          REDIS_PORT: "6379"
-          REDIS_URL: redis://localhost:6379
-          RESEND_API_KEY: re_dummy_key_for_staging_testing_123456789
-          EMAIL_FROM: Ticket Booking <support@ticketbooking.ngxc.io.vn>
-          SENTRY_DSN: ""
-          SENTRY_ENVIRONMENT: test
-          SENTRY_TRACES_SAMPLE_RATE: "1.0"
-          SHOW_CREATION_MIN_LEAD_MINUTES: "10"
-          VUS: "500"
         run: |
-          cat << 'EOF' > test/standalone-server.ts
+          cat << 'EOF' > test/standalone-server.spec.ts
           import { test } from "bun:test";
           import { Test } from "@nestjs/testing";
           import { AppModule } from "../src/app.module";
@@ -159,7 +97,7 @@ jobs:
           }, { timeout: 0 });
           EOF
 
-          bun test test/standalone-server.ts &
+          bun test ./test/standalone-server.spec.ts &
           bunx wait-on http://127.0.0.1:3000/ --timeout 60000
 
       - name: Install Playwright Dependencies & Browsers
@@ -179,14 +117,12 @@ jobs:
       - name: Run Playwright API Tests (Against Local Ephemeral Backend)
         working-directory: software-testing-playwright
         env:
-          API_BASE_URL: http://127.0.0.1:3000
           CI: true
         run: bun run test:api
 
       - name: Run Playwright Web UI Tests (SauceDemo E2E)
         working-directory: software-testing-playwright
         env:
-          WEB_BASE_URL: ${{ secrets.WEB_BASE_URL || 'https://www.saucedemo.com' }}
           CI: true
         run: bun run test:e2e
 
