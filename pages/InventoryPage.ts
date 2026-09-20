@@ -23,7 +23,9 @@ export class InventoryPage {
   }
 
   getItemButton(productName: string): Locator {
-    return this.inventoryItems.filter({ hasText: productName }).getByRole('button');
+    return this.inventoryItems
+      .filter({ hasText: productName })
+      .locator('button[data-test^="add-to-cart"], button[data-test^="remove"]');
   }
 
   async goToCart(): Promise<void> {

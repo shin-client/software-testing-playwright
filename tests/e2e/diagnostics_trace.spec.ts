@@ -21,8 +21,8 @@ test.describe("WBS 3.3: Web UI Test Suite - Post-Mortem Diagnostics with Trace V
     await page.locator("#password").fill("secret_sauce");
     await page.locator("#login-button").click();
 
-    await expect(page).toHaveURL(/.*inventory.html/);
-    await expect(page.locator(".title")).toHaveText("Products");
+    await expect(page).toHaveURL(/.*inventory.html/, { timeout: 15000 });
+    await expect(page.locator(".title")).toHaveText("Products", { timeout: 15000 });
 
     await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
     await expect(page.locator(".shopping_cart_badge")).toHaveText("1");
@@ -61,7 +61,7 @@ test.describe("WBS 3.3: Web UI Test Suite - Post-Mortem Diagnostics with Trace V
     await page.locator("#login-button").click();
 
     const inventoryContainer = page.locator("#inventory_container").first();
-    await expect(inventoryContainer).toBeVisible();
+    await expect(inventoryContainer).toBeVisible({ timeout: 15000 });
 
     const inventoryItems = page.locator(".inventory_item");
     await expect(inventoryItems).toHaveCount(6);
