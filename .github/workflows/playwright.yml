@@ -14,111 +14,39 @@ concurrency:
 jobs:
   test:
     name: Run Playwright Dual-Engine Test Suite
-    timeout-minutes: 20
+    timeout-minutes: 15
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgrespassword
-          POSTGRES_DB: ticket_booking
-        ports:
-          - 5432:5432
-        options: >-
-          --mount type=tmpfs,destination=/var/lib/postgresql,tmpfs-size=1073741824
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:8-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --mount type=tmpfs,destination=/data,tmpfs-size=536870912
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout Playwright Test Suite
         uses: actions/checkout@v7
-        with:
-          path: software-testing-playwright
 
-      - name: Checkout Backend Service (ngxccc/ticket-booking)
-        id: checkout_backend
-        uses: actions/checkout@v7
-        with:
-          repository: ngxccc/ticket-booking
-          path: ticket-booking
+      - name: Start Full Test Environment
+        run: |
+          docker compose up -d --wait
 
       - name: Setup Bun Runtime
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Export Unified Environment Variables (.env.test)
-        run: |
-          grep -E '^[A-Za-z_][A-Za-z0-9_]*=' software-testing-playwright/.env.test >> $GITHUB_ENV
-
-      - name: Install Backend Dependencies & Seed Test Database
-        working-directory: ticket-booking
-        run: |
-          bun install --frozen-lockfile
-          bun drizzle-kit push --config drizzle.config.ts
-          bun src/database/seeds/index.ts --reset
-
-      - name: Restore Backend Build Cache
-        uses: actions/cache@v6
-        id: backend-dist-cache
-        with:
-          path: ticket-booking/dist
-          key: backend-dist-${{ hashFiles('ticket-booking/src/**', 'ticket-booking/package.json', 'ticket-booking/bun.lockb', 'ticket-booking/nest-cli.json') }}
-          restore-keys: |
-            backend-dist-
-
-      - name: Build Backend Service
-        if: steps.backend-dist-cache.outputs.cache-hit != 'true'
-        working-directory: ticket-booking
-        run: bun run build
-
-      - name: Start Ephemeral Backend Server
-        working-directory: ticket-booking
-        run: |
-          bun dist/main.js &
-          bunx wait-on http://127.0.0.1:3000/ --timeout 60000
-
       - name: Install Playwright Dependencies & Browsers
-        working-directory: software-testing-playwright
         run: |
           bun install --frozen-lockfile
           bunx playwright install --with-deps chromium
 
-      - name: Sync Seat Pool Fixture
-        working-directory: software-testing-playwright
-        run: bun run sync:seats
-
       - name: Run TypeScript Typecheck
-        working-directory: software-testing-playwright
         run: bun run typecheck
 
       - name: Run ESLint Code Analysis
-        working-directory: software-testing-playwright
         run: bun run lint
 
       - name: Run Playwright API Tests
-        working-directory: software-testing-playwright
         env:
           CI: true
         run: bun run test:api
 
       - name: Run Playwright Web UI Tests (SauceDemo E2E)
-        working-directory: software-testing-playwright
         env:
           CI: true
         run: bun run test:e2e
@@ -128,7 +56,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: software-testing-playwright/playwright-report/
+          path: playwright-report/
           retention-days: 14
 
       - name: Upload Test Results & Traces
@@ -136,5 +64,5 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-results
-          path: software-testing-playwright/test-results/
+          path: test-results/
           retention-days: 14
