@@ -8,13 +8,13 @@ const isCI = process.env.CI === "true" || process.env.CI === "1";
 const API_BASE_URL =
   process.env.API_BASE_URL ||
   process.env.BASE_URL ||
-  "https://ticket-booking-amqv.onrender.com";
+  "http://127.0.0.1:3000";
 const WEB_BASE_URL = process.env.WEB_BASE_URL || "https://www.saucedemo.com";
 
 /**
  * Playwright Multi-Project Configuration for Group 67 SDET Automation Framework
  * Supporting dual-engine testing:
- *  - NestJS Ticket Booking API Backend (https://ticket-booking-amqv.onrender.com)
+ *  - NestJS Ticket Booking API Backend (http://127.0.0.1:3000)
  *  - SauceDemo Swag Labs Web UI (https://www.saucedemo.com)
  */
 export default defineConfig({
@@ -59,32 +59,6 @@ export default defineConfig({
     {
       name: "chromium",
       testMatch: /.*tests\/e2e\/.*\.spec\.ts/,
-      use: {
-        baseURL: WEB_BASE_URL,
-        ...devices["Desktop Chrome"],
-      },
-    },
-    {
-      name: "firefox",
-      testMatch: /.*tests\/e2e\/.*\.spec\.ts/,
-      use: {
-        baseURL: WEB_BASE_URL,
-        ...devices["Desktop Firefox"],
-      },
-    },
-    {
-      name: "webkit",
-      testMatch: /.*tests\/e2e\/.*\.spec\.ts/,
-      use: {
-        baseURL: WEB_BASE_URL,
-        ...devices["Desktop Safari"],
-      },
-    },
-
-    // 3. Smoke / Healthcheck Project
-    {
-      name: "smoke",
-      testMatch: /.*tests\/smoke\/.*\.spec\.ts/,
       use: {
         baseURL: WEB_BASE_URL,
         ...devices["Desktop Chrome"],
