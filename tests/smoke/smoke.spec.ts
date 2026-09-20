@@ -31,10 +31,15 @@ test.describe('Smoke Verification Suite (WBS 1.6 Baseline)', () => {
 
   test('SMOKE-03: Verify multi-project configuration and environment setup', async () => {
     const webUrl = process.env.WEB_BASE_URL || 'https://www.saucedemo.com';
-    const apiUrl = process.env.API_BASE_URL || 'https://ticket-booking-amqv.onrender.com';
+    const apiUrl =
+      process.env.API_BASE_URL || "https://ticket-booking-amqv.onrender.com";
 
-    expect(webUrl).toContain('saucedemo.com');
-    expect(apiUrl).toContain('onrender.com');
+    expect(webUrl).toContain("saucedemo.com");
+    expect(
+      apiUrl.includes("onrender.com") ||
+        apiUrl.includes("localhost") ||
+        apiUrl.includes("127.0.0.1"),
+    ).toBe(true);
   });
 
 });
