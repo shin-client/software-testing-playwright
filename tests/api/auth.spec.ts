@@ -47,7 +47,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
   test("TC-AUTH-01: Đăng ký tài khoản mới hợp chuẩn DTO (Register DTO Validation)", async ({
     request,
   }) => {
-    const regRes = await request.post("/auth/register", {
+    const regRes = await request.post("/api/v1/auth/register", {
       data: testUser,
     });
 
@@ -60,7 +60,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
     request,
   }) => {
     // Đăng nhập tài khoản seeded user1@test.com
-    const loginRes = await request.post("/auth/login", {
+    const loginRes = await request.post("/api/v1/auth/login", {
       data: seededUser,
     });
 
@@ -87,7 +87,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
     const initialRT = currentRefreshToken;
 
     // 1. Gửi request xoay vòng Refresh Token lần 1
-    const refreshRes = await request.post("/auth/refresh", {
+    const refreshRes = await request.post("/api/v1/auth/refresh", {
       data: { refreshToken: initialRT },
     });
 
@@ -107,7 +107,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
     currentRefreshToken = rotatedRT;
 
     // 2. REPLAY ATTACK: Cố tình gửi lại initialRT cũ đã bị hủy
-    const replayRes = await request.post("/auth/refresh", {
+    const replayRes = await request.post("/api/v1/auth/refresh", {
       data: { refreshToken: initialRT },
     });
 
@@ -121,7 +121,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
     expect(currentAccessToken).not.toBe("");
 
     // 1. Gọi POST /auth/logout truyền Refresh Token hiện tại
-    const logoutRes = await request.post("/auth/logout", {
+    const logoutRes = await request.post("/api/v1/auth/logout", {
       headers: {
         Authorization: `Bearer ${currentAccessToken}`,
       },
@@ -131,7 +131,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
     expect([200, 204]).toContain(logoutRes.status());
 
     // 2. Thử dùng lại Refresh Token vừa đăng xuất -> Phải bị chặn với 401 Unauthorized
-    const postLogoutRes = await request.post("/auth/refresh", {
+    const postLogoutRes = await request.post("/api/v1/auth/refresh", {
       data: { refreshToken: currentRefreshToken },
     });
 
@@ -141,7 +141,7 @@ test.describe("WBS 2.1: Auth Lifecycle & Token Rotation API Tests", () => {
   test("TC-AUTH-05: Đăng nhập thất bại khi dùng sai Mật khẩu (401 Unauthorized)", async ({
     request,
   }) => {
-    const invalidRes = await request.post("/auth/login", {
+    const invalidRes = await request.post("/api/v1/auth/login", {
       data: {
         email: seededUser.email,
         password: "WrongPassword999!",

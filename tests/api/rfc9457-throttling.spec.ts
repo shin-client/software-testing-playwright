@@ -14,7 +14,7 @@ test.describe("WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler", () 
     request,
   }) => {
     // 1.1 Kiểm tra 400 Bad Request (Sai DTO Validation)
-    const res400 = await request.post("/auth/register", {
+    const res400 = await request.post("/api/v1/auth/register", {
       data: { email: "invalid-email-format" },
     });
     expect(res400.status()).toBe(400);
@@ -45,7 +45,7 @@ test.describe("WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler", () 
 
     // Bắn liên tiếp các request sai thông tin để kích hoạt Throttler Guard
     for (let i = 0; i < 10; i++) {
-      lastResponse = await request.post("/auth/login", {
+      lastResponse = await request.post("/api/v1/auth/login", {
         data: {
           email: `brute_force_${i}@example.com`,
           password: "wrong_password",
@@ -92,7 +92,7 @@ test.describe("WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler", () 
     // 1. Bắn request để ép rơi vào trạng thái 429
     let res;
     for (let i = 0; i < 8; i++) {
-      res = await request.post("/auth/login", {
+      res = await request.post("/api/v1/auth/login", {
         data: {
           email: "cooldown_test@example.com",
           password: "wrong_password",
@@ -123,7 +123,7 @@ test.describe("WBS 2.4: RFC 9457 Problem Details & Rate Limiting Throttler", () 
     setTimeout(resolve, (waitSeconds + 3) * 1000);
     await promise;
     // xác nhận
-    const recoveryRes = await request.post("/auth/login", {
+    const recoveryRes = await request.post("/api/v1/auth/login", {
       data: { email: "cooldown_test@example.com", password: "wrong_password" },
     });
     expect(recoveryRes.status()).not.toBe(429);

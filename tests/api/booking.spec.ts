@@ -45,7 +45,7 @@ async function createPendingReservation(
     const seatIndex = (nextSeatIndex + attempt) % totalSeats;
     const seatId = SEAT_POOL[seatIndex];
 
-    let res = await authRequest.post("/bookings/reserve", {
+    let res = await authRequest.post("/api/v1/bookings/reserve", {
       headers: {
         "idempotency-key": crypto.randomUUID(),
       },
@@ -62,7 +62,7 @@ async function createPendingReservation(
         setTimeout(resolve, Math.min(waitMs, 15000)),
       );
 
-      res = await authRequest.post("/bookings/reserve", {
+      res = await authRequest.post("/api/v1/bookings/reserve", {
         headers: {
           "idempotency-key": crypto.randomUUID(),
         },
@@ -111,7 +111,7 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     sharedIdempotencyKey = crypto.randomUUID();
 
     // 2. Gửi request xác nhận thanh toán lần đầu
-    const confirmRes = await authRequest.post("/bookings/confirm", {
+    const confirmRes = await authRequest.post("/api/v1/bookings/confirm", {
       headers: {
         "idempotency-key": sharedIdempotencyKey,
       },
@@ -142,7 +142,7 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     expect(sharedIdempotencyKey).not.toBe("");
 
     // Gửi lại CHÍNH XÁC request xác nhận với cùng Idempotency Key
-    const retryRes = await authRequest.post("/bookings/confirm", {
+    const retryRes = await authRequest.post("/api/v1/bookings/confirm", {
       headers: {
         "idempotency-key": sharedIdempotencyKey,
       },
@@ -172,7 +172,7 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
     authRequest,
   }) => {
     // Cố tình gửi request xác nhận không kèm header 'idempotency-key'
-    const invalidRes = await authRequest.post("/bookings/confirm", {
+    const invalidRes = await authRequest.post("/api/v1/bookings/confirm", {
       data: {
         bookingId: crypto.randomUUID(),
         orderCode: 999999,
@@ -209,7 +209,7 @@ test.describe("WBS 2.3: Booking Transaction & Idempotency Verification Suite", (
 
     // Bắn đồng thời 2 requests cùng lúc mang chung 1 Idempotency Key (Double Click Attack)
     const floodPromises = Array.from({ length: 2 }, () =>
-      authRequest.post("/bookings/confirm", {
+      authRequest.post("/api/v1/bookings/confirm", {
         headers: {
           "idempotency-key": singleKey,
         },

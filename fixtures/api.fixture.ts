@@ -42,7 +42,7 @@ async function acquireToken(
   // 1. Nếu token cũ còn hạn, kiểm tra tính hợp lệ với server hiện tại
   if (existing?.accessToken && isTokenValid(existing.accessToken)) {
     try {
-      const checkRes = await requestContext.get("/users/me", {
+      const checkRes = await requestContext.get("/api/v1/users/me", {
         headers: { Authorization: `Bearer ${existing.accessToken}` },
       });
       if (checkRes.status() === 200) {
@@ -56,7 +56,7 @@ async function acquireToken(
   // 2. Nếu có refreshToken, refresh nhanh qua /auth/refresh (không bị dính 5 req/phút của /auth/login)
   if (existing?.refreshToken) {
     try {
-      const refreshRes = await requestContext.post("/auth/refresh", {
+      const refreshRes = await requestContext.post("/api/v1/auth/refresh", {
         data: { refreshToken: existing.refreshToken },
       });
       if (refreshRes.status() === 200) {
@@ -78,7 +78,7 @@ async function acquireToken(
 
   // 3. Fallback: Đăng nhập mới qua /auth/login với backoff retry
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const loginRes = await requestContext.post("/auth/login", {
+    const loginRes = await requestContext.post("/api/v1/auth/login", {
       data: { email, password },
     });
     const body = await loginRes.json();
@@ -97,7 +97,7 @@ async function acquireToken(
     ) {
       // Tự động đăng ký user nếu chưa tồn tại trong CSDL mới
       await requestContext
-        .post("/auth/register", {
+        .post("/api/v1/auth/register", {
           data: {
             email,
             password,

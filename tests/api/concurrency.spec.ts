@@ -38,7 +38,7 @@ async function fireConcurrentBookingWithFallback(
 ): Promise<ConcurrentResult> {
   for (const seatId of seatCandidates) {
     const requestPromises = activeClients.map((authCtx) => {
-      return authCtx.post("/bookings/reserve", {
+      return authCtx.post("/api/v1/bookings/reserve", {
         headers: {
           "idempotency-key": crypto.randomUUID(),
         },
@@ -101,7 +101,7 @@ async function sendReservationWith429Retry(
   seatId: string,
   maxAttempts = 3,
 ): Promise<APIResponse> {
-  let res = await userCtx.post("/bookings/reserve", {
+  let res = await userCtx.post("/api/v1/bookings/reserve", {
     headers: { "idempotency-key": crypto.randomUUID() },
     data: { showId, seatIds: [seatId] },
   });
@@ -113,7 +113,7 @@ async function sendReservationWith429Retry(
     setTimeout(resolve, Math.min(waitMs, 30000));
     await promise;
 
-    res = await userCtx.post("/bookings/reserve", {
+    res = await userCtx.post("/api/v1/bookings/reserve", {
       headers: { "idempotency-key": crypto.randomUUID() },
       data: { showId, seatIds: [seatId] },
     });
